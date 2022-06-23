@@ -5,5 +5,10 @@ token: "TOKEN"
 commands:
   - commands/gitlab/upgrade_check.yaml
   - commands/docker/image_list.yaml
+scheduler:
+  - name: "Check Gitlab Version"
+    command: "gitlab upgrade check"
+    cron: "0 10 * * *"
+    hook: "MM_INCOMING_HOOK_URL"
 
 ...
