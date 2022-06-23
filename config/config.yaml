@@ -1,8 +1,10 @@
 ---
 
 listen: "0.0.0.0:8080"
-token: "TOKEN"
+token: "ojz6376we3dhjrn7wfcx5srwww"
 commands:
   - commands/gitlab/upgrade_check.yaml
+  - commands/docker/image_list.yaml
+
 
 ...
