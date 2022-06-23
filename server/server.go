@@ -98,7 +98,7 @@ func scheduledJobHandler(scheduledCommand *ScheduledCommand, job gocron.Job) {
 	} else if opsCommand.Response.Generate {
 		msgColor := "#000000"
 		for _, responseColor := range opsCommand.Response.Colors {
-			if responseColor.Status == output["status"] {
+			if responseColor.Status == output.Status {
 				msgColor = responseColor.Color
 				break
 			}
