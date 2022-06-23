@@ -6,7 +6,12 @@ require (
 	github.com/gorilla/schema v1.2.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/mattermost/mattermost-server/v6 v6.7.2
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
+	github.com/robfig/cron/v3 v3.0.1 // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 )
 
 require (
@@ -15,6 +20,7 @@ require (
 	github.com/dyatlov/go-opengraph v0.0.0-20210112100619-dae8665a5b09 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.3 // indirect
+	github.com/go-co-op/gocron v1.14.0
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/graph-gophers/graphql-go v1.3.0 // indirect

@@ -8,9 +8,17 @@ import (
 )
 
 type OpsToolConfig struct {
-	Listen                string   `yaml:"listen"`
-	Token                 string   `yaml:"token"`
-	CommandConfigurations []string `yaml:"commands"`
+	Listen                string              `yaml:"listen"`
+	Token                 string              `yaml:"token"`
+	CommandConfigurations []string            `yaml:"commands"`
+	ScheduledCommands     []*ScheduledCommand `yaml:"scheduler"`
+}
+
+type ScheduledCommand struct {
+	Name    string `yaml:"name"`
+	Command string `yaml:"command"`
+	Cron    string `yaml:"cron"`
+	Hook    string `yaml:"hook"`
 }
 
 var Config *OpsToolConfig = &OpsToolConfig{}

@@ -4,5 +4,10 @@ listen: "0.0.0.0:8080"
 token: "TOKEN"
 commands:
   - commands/gitlab/upgrade_check.yaml
+scheduler:
+  - name: "Check Gitlab Version"
+    command: "gitlab upgrade check"
+    cron: "0 10 * * *"
+    hook: "MM_INCOMING_HOOK_URL"
 
 ...
