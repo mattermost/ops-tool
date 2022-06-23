@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -57,7 +58,24 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			WriteErrorResponse(w, NewError("You do not have permission to execute "+command.Command, err))
 			return
 		}
-		WriteResponse(w, "Received", model.CommandResponseTypeEphemeral)
+		output, err := opsCommand.Execute(command)
+		if err != nil {
+			LogError("Error occurred while executing command! %v", err)
+			WriteErrorResponse(w, NewError("Command execution failed!", err))
+		} else if opsCommand.Response.Generate {
+			msgColor := "#000000"
+			for _, responseColor := range opsCommand.Response.Colors {
+				if responseColor.Status == output["status"] {
+					msgColor = responseColor.Color
+					break
+				}
+			}
+
+			buf := bytes.NewBufferString("")
+			err = opsCommand.Response.Template.Execute(buf, &output)
+			WriteEnrichedResponse(w, opsCommand.Name, buf.String(), msgColor, opsCommand.Response.Type)
+		}
+
 	}
 
 }
