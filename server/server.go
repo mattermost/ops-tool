@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -36,12 +37,34 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		WriteErrorResponse(w, NewError("Invalid comand token! Please check slash command tokens!", err))
 		return
 	}
-	LogInfo("Received command: %s at channel %s from %s", command.Command, command.ChannelName, command.Username)
-	WriteResponse(w, "Received", model.CommandResponseTypeEphemeral)
+	LogInfo("Received command: %s at channel %s from %s", command.Text, command.ChannelName, command.Username)
+	if command.Text == "" || command.Text == "help" {
+		msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
+		for key, opsCommand := range Commands {
+			if opsCommand.CanTrigger(command.Username) {
+				msg += fmt.Sprintf("\n| __%s__ | `%s %s` | *%s* |", opsCommand.Name, command.Command, key, opsCommand.Description)
+			}
+
+		}
+		WriteEnrichedResponse(w, "Supported Commands", msg, "#0000ff", model.CommandResponseTypeEphemeral)
+	} else {
+		opsCommand, found := Commands[command.Text]
+		if !found {
+			WriteErrorResponse(w, NewError("Command not found", err))
+			return
+		}
+		if !opsCommand.CanTrigger(command.Username) {
+			WriteErrorResponse(w, NewError("You do not have permission to execute "+command.Command, err))
+			return
+		}
+		WriteResponse(w, "Received", model.CommandResponseTypeEphemeral)
+	}
+
 }
 
 func Start() {
 	LoadConfig("config.yaml")
+	LoadCommands()
 	LogInfo("Starting OpsTool")
 
 	router := httprouter.New()

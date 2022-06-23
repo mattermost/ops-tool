@@ -8,8 +8,9 @@ import (
 )
 
 type OpsToolConfig struct {
-	Listen string `yaml:"listen"`
-	Token  string `yaml:"token"`
+	Listen                string   `yaml:"listen"`
+	Token                 string   `yaml:"token"`
+	CommandConfigurations []string `yaml:"commands"`
 }
 
 var Config *OpsToolConfig = &OpsToolConfig{}
@@ -29,10 +30,10 @@ func LoadConfig(fileName string) {
 
 	content, err := os.ReadFile(fileName)
 	if err != nil {
-		LogCritical("Error reading config file=" + fileName + ", err=" + err.Error())
+		LogCritical("Error reading config file=%s err= %v", fileName, err)
 	}
 	err = yaml.Unmarshal(content, Config)
 	if err != nil {
-		LogCritical("Error decoding config file=" + fileName + ", err=" + err.Error())
+		LogCritical("Error decoding config file=%s err= %v", fileName, err)
 	}
 }
