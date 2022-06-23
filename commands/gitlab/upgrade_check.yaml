@@ -7,7 +7,7 @@
     - name: GITLAB_URL
       value: https://git.internal.mattermost.com
     - name: GITLAB_TOKEN
-      value: glpat-1FkLHgjMGZHzBGv8KgHX
+      value: TOKEN
   exec: 
     - scripts/gitlab/upgrade_check.sh
   response:
