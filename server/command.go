@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"os"
 	"os/exec"
-	"text/template"
 
 	"gopkg.in/yaml.v2"
 )
@@ -39,6 +39,11 @@ type Color struct {
 	Status string `yaml:"status"`
 }
 
+type OpsCommandOutput struct {
+	Status string      `json:"status"`
+	Data   interface{} `json:"data"`
+}
+
 var Commands map[string]*OpsCommand = make(map[string]*OpsCommand)
 
 func (cmd *OpsCommand) CanTrigger(username string) bool {
@@ -55,12 +60,13 @@ func (cmd *OpsCommand) CanTrigger(username string) bool {
 	return canTrigger
 }
 
-func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand) (map[string]string, error) {
-	var output map[string]string = make(map[string]string)
+func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand) (*OpsCommandOutput, error) {
+	output := &OpsCommandOutput{}
 	for _, step := range opsCmd.Exec {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 		cmd := exec.Command("/bin/bash", "-c", step)
+		cmd.Env = append(cmd.Env, os.Environ()...)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("CHANNEL_NAME=%s", mmCommand.ChannelName))
 		cmd.Env = append(cmd.Env, fmt.Sprintf("TEAM_NAME=%s", mmCommand.TeamName))
 		cmd.Env = append(cmd.Env, fmt.Sprintf("USER_NAME=%s", mmCommand.Username))
@@ -76,7 +82,7 @@ func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand) (map[string]string,
 			return nil, err
 		}
 		data := stdout.Bytes()
-		err = json.Unmarshal(data, &output)
+		err = json.Unmarshal(data, output)
 		if err != nil {
 			LogError("Error while deserializing command output %s.Err:%s.\n%v", opsCmd.Name, string(data), err)
 			return nil, err

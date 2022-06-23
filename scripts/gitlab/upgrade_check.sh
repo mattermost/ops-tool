@@ -23,4 +23,4 @@ jq --null-input \
   --arg version "$VERSION" \
   --arg latest "$LATEST_VERSION" \
   --arg changeNotes "$CHANGE_NOTES" \
-  '{"status": $status,"version": $version,"latest": $latest,"change_notes_url": $changeNotes}'
+  '{"status": $status, "data": {"version": $version,"latest": $latest,"change_notes_url": $changeNotes}}'

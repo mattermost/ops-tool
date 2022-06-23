@@ -67,14 +67,14 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		} else if opsCommand.Response.Generate {
 			msgColor := "#000000"
 			for _, responseColor := range opsCommand.Response.Colors {
-				if responseColor.Status == output["status"] {
+				if responseColor.Status == output.Status {
 					msgColor = responseColor.Color
 					break
 				}
 			}
 
 			buf := bytes.NewBufferString("")
-			err = opsCommand.Response.Template.Execute(buf, &output)
+			err = opsCommand.Response.Template.Execute(buf, output)
 			if err != nil {
 				LogError("Error occurred while rendering response! %v", err)
 				WriteErrorResponse(w, NewError("Command execution failed!", err))
@@ -82,9 +82,7 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 				WriteEnrichedResponse(w, opsCommand.Name, buf.String(), msgColor, opsCommand.Response.Type)
 			}
 		}
-
 	}
-
 }
 
 func scheduledJobHandler(scheduledCommand *ScheduledCommand, job gocron.Job) {
@@ -100,7 +98,7 @@ func scheduledJobHandler(scheduledCommand *ScheduledCommand, job gocron.Job) {
 	} else if opsCommand.Response.Generate {
 		msgColor := "#000000"
 		for _, responseColor := range opsCommand.Response.Colors {
-			if responseColor.Status == output["status"] {
+			if responseColor.Status == output.Status {
 				msgColor = responseColor.Color
 				break
 			}

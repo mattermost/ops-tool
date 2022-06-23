@@ -18,10 +18,10 @@
     - color: "#00ff00"
       status: "ok"
     template: |
-      {{ if eq .status "upgrade" }}
-      GitLab current version is {{ .version }}. Please upgrade to {{ .latest }}.[Change Notes]({{ .change_notes_url }})
+      {{ if eq .Status "upgrade" }}
+      GitLab current version is {{ .Data.version }}. Please upgrade to {{ .Data.latest }}.[Change Notes]({{ .Data.change_notes_url }})
       {{ else }}
-      GitLab current version is {{ .version }}. Upgrade is not needed!
+      GitLab current version is {{ .Data.version }}. Upgrade is not needed!
       {{ end }}  
 
 ...
