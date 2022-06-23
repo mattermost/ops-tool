@@ -73,6 +73,9 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			LogError("Error occurred while executing command! %v", err)
 			WriteErrorResponse(w, NewError("Command execution failed!", err))
 		} else if len(opsCommand.Provides) > 0 {
+			sort.Slice(opsCommand.ProvidedCommands, func(i, j int) bool {
+				return opsCommand.ProvidedCommands[i].Command < opsCommand.ProvidedCommands[j].Command
+			})
 			msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
 			for _, c := range opsCommand.ProvidedCommands {
 				if opsCommand.CanTrigger(command.Username) {
