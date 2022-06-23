@@ -5,6 +5,7 @@ token: "TOKEN"
 commands:
   - commands/gitlab/upgrade_check.yaml
   - commands/docker/image_list.yaml
+  - commands/docker/ps.yaml
 scheduler:
   - name: "Check Gitlab Version"
     command: "gitlab upgrade check"

@@ -104,7 +104,9 @@ func LoadCommands() {
 		if err != nil {
 			LogCritical("Error reading command file=%s err= %v", commandConfiguration, err)
 		}
-		for _, command := range commands {
+		for i, _ := range commands {
+			command := commands[i]
+
 			LogInfo("Command %s[%s]=%s", command.Name, command.Command, command.Description)
 			if command.Response.TemplateString != "" {
 				command.Response.Generate = true
