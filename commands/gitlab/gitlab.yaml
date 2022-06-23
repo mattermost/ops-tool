@@ -1,0 +1,9 @@
+---
+
+- command: "gitlab"
+  name: "List gitlab commands"
+  description: "List gitlab related commands"
+  provides:
+    - commands/gitlab/upgrade_check.yaml
+
+...
