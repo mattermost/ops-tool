@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/ops-tool/version"
@@ -73,11 +75,45 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 			buf := bytes.NewBufferString("")
 			err = opsCommand.Response.Template.Execute(buf, &output)
-			WriteEnrichedResponse(w, opsCommand.Name, buf.String(), msgColor, opsCommand.Response.Type)
+			if err != nil {
+				LogError("Error occurred while rendering response! %v", err)
+				WriteErrorResponse(w, NewError("Command execution failed!", err))
+			} else {
+				WriteEnrichedResponse(w, opsCommand.Name, buf.String(), msgColor, opsCommand.Response.Type)
+			}
 		}
 
 	}
 
+}
+
+func scheduledJobHandler(scheduledCommand *ScheduledCommand, job gocron.Job) {
+	LogInfo("%s's last run: %s; next run: %s", scheduledCommand.Name, job.LastRun(), job.NextRun())
+	opsCommand, found := Commands[scheduledCommand.Command]
+	if !found {
+		return
+	}
+
+	output, err := opsCommand.Execute(&MMSlashCommand{})
+	if err != nil {
+		LogError("Error occurred while executing command! %v", err)
+	} else if opsCommand.Response.Generate {
+		msgColor := "#000000"
+		for _, responseColor := range opsCommand.Response.Colors {
+			if responseColor.Status == output["status"] {
+				msgColor = responseColor.Color
+				break
+			}
+		}
+
+		buf := bytes.NewBufferString("")
+		err = opsCommand.Response.Template.Execute(buf, &output)
+		if err != nil {
+			LogError("Error occurred while rendering response! %v", err)
+		} else {
+			SendViaIncomingHook(scheduledCommand.Hook, opsCommand.Name, buf.String(), msgColor)
+		}
+	}
 }
 
 func Start() {
@@ -85,6 +121,14 @@ func Start() {
 	LoadCommands()
 	LogInfo("Starting OpsTool")
 
+	LogInfo("Starting Scheduler")
+	scheduler := gocron.NewScheduler(time.UTC)
+	for _, scheduledCommand := range Config.ScheduledCommands {
+		LogInfo("Scheduled Job %s for %s", scheduledCommand.Name, scheduledCommand.Cron)
+		scheduler.Cron(scheduledCommand.Cron).DoWithJobDetails(scheduledJobHandler, scheduledCommand)
+	}
+	scheduler.StartAsync()
+	LogInfo("Starting Http Router")
 	router := httprouter.New()
 	router.GET("/", indexHandler)
 	router.GET("/healthz", healthHandler)
@@ -94,4 +138,5 @@ func Start() {
 	if err := http.ListenAndServe(Config.Listen, router); err != nil {
 		LogError(err.Error())
 	}
+
 }

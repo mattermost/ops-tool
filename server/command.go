@@ -60,10 +60,11 @@ func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand) (map[string]string,
 	for _, step := range opsCmd.Exec {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		cmd := exec.Command(step)
+		cmd := exec.Command("/bin/bash", "-c", step)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("CHANNEL_NAME=%s", mmCommand.ChannelName))
 		cmd.Env = append(cmd.Env, fmt.Sprintf("TEAM_NAME=%s", mmCommand.TeamName))
 		cmd.Env = append(cmd.Env, fmt.Sprintf("USER_NAME=%s", mmCommand.Username))
+		cmd.Env = append(cmd.Env, fmt.Sprintf("COMMAND_TEXT=%s", mmCommand.Text))
 		for _, cmdVar := range opsCmd.Variables {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", cmdVar.Name, cmdVar.Value))
 		}
