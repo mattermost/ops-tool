@@ -1,0 +1,27 @@
+---
+
+- command: "gitlab upgrade check"
+  name: "Check GitLab Version"
+  description: "Checks GitLab version and notify user about version update."
+  vars:
+    - name: GITLAB_URL
+      value: https://git.internal.mattermost.com
+    - name: GITLAB_TOKEN
+      value: TOKEN
+  exec: 
+    - scripts/gitlab/upgrade_check.sh
+  response:
+    type: "ephemeral"
+    colors:
+    - color: "#ff0000"
+      status: "upgrade"
+    - color: "#00ff00"
+      status: "ok"
+    template: |
+      {{ if eq .status "upgrade" }}
+      GitLab current version is {{ .version }}. Please upgrade to {{ .latest }}.[Change Notes]({{ .change_notes_url }})
+      {{ else }}
+      GitLab current version is {{ .version }}. Upgrade is not needed!
+      {{ end }}  
+
+...

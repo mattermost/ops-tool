@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -36,12 +38,51 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		WriteErrorResponse(w, NewError("Invalid comand token! Please check slash command tokens!", err))
 		return
 	}
-	LogInfo("Received command: %s at channel %s from %s", command.Command, command.ChannelName, command.Username)
-	WriteResponse(w, "Received", model.CommandResponseTypeEphemeral)
+	LogInfo("Received command: %s at channel %s from %s", command.Text, command.ChannelName, command.Username)
+	if command.Text == "" || command.Text == "help" {
+		msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
+		for key, opsCommand := range Commands {
+			if opsCommand.CanTrigger(command.Username) {
+				msg += fmt.Sprintf("\n| __%s__ | `%s %s` | *%s* |", opsCommand.Name, command.Command, key, opsCommand.Description)
+			}
+
+		}
+		WriteEnrichedResponse(w, "Supported Commands", msg, "#0000ff", model.CommandResponseTypeEphemeral)
+	} else {
+		opsCommand, found := Commands[command.Text]
+		if !found {
+			WriteErrorResponse(w, NewError("Command not found", err))
+			return
+		}
+		if !opsCommand.CanTrigger(command.Username) {
+			WriteErrorResponse(w, NewError("You do not have permission to execute "+command.Command, err))
+			return
+		}
+		output, err := opsCommand.Execute(command)
+		if err != nil {
+			LogError("Error occurred while executing command! %v", err)
+			WriteErrorResponse(w, NewError("Command execution failed!", err))
+		} else if opsCommand.Response.Generate {
+			msgColor := "#000000"
+			for _, responseColor := range opsCommand.Response.Colors {
+				if responseColor.Status == output["status"] {
+					msgColor = responseColor.Color
+					break
+				}
+			}
+
+			buf := bytes.NewBufferString("")
+			err = opsCommand.Response.Template.Execute(buf, &output)
+			WriteEnrichedResponse(w, opsCommand.Name, buf.String(), msgColor, opsCommand.Response.Type)
+		}
+
+	}
+
 }
 
 func Start() {
 	LoadConfig("config.yaml")
+	LoadCommands()
 	LogInfo("Starting OpsTool")
 
 	router := httprouter.New()
