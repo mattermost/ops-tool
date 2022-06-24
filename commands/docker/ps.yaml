@@ -1,8 +1,8 @@
 ---
 
-- command: "docker ps"
-  name: "List running docker containers"
-  description: "List running docker contains on the docker host."
+- command: "ps"
+  name: "List docker containers"
+  description: "List running docker containers on the docker host. With `-a` flag it will list all docker containers"
   exec: 
     - scripts/docker/ps.sh
   response:
@@ -14,20 +14,4 @@
       | {{ $a.ID }} | {{ $a.Image }} | {{ $a.Command }} | {{ $a.CreatedAt }} | {{ $a.Status }} | {{ $a.Ports }} | {{ $a.Names }} |
       {{end}}
 
-- command: "docker ps all"
-  name: "List all docker containers"
-  description: "List all docker contains on the docker host."
-  exec: 
-    - scripts/docker/ps.sh
-  vars:
-    - name: DOCKER_PS_FLAGS
-      value: "-a"
-  response:
-    type: "ephemeral"
-    template: |
-      | Container ID | Image | Command | Created | Status | Ports | Names |
-      |---|---|---|---|---|---|---|
-      {{range $i, $a := .Data -}}
-      | {{ $a.ID }} | {{ $a.Image }} | {{ $a.Command }} | {{ $a.CreatedAt }} | {{ $a.Status }} | {{ $a.Ports }} | {{ $a.Names }} |
-      {{end}}
 ...

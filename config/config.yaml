@@ -7,8 +7,11 @@ commands:
   - commands/docker/docker.yaml
 scheduler:
   - name: "Check Gitlab Version"
-    command: "gitlab upgrade check"
-    cron: "0 10 * * *"
+    provider: "gitlab"
+    command: "version"
+    args:
+      - "check"
+    cron: "0 * * * *"
     hook: "MM_INCOMING_HOOK_URL"
-
+    
 ...

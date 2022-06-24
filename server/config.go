@@ -15,10 +15,12 @@ type OpsToolConfig struct {
 }
 
 type ScheduledCommand struct {
-	Name    string `yaml:"name"`
-	Command string `yaml:"command"`
-	Cron    string `yaml:"cron"`
-	Hook    string `yaml:"hook"`
+	Name     string   `yaml:"name"`
+	Provider string   `yaml:"provider"`
+	Command  string   `yaml:"command"`
+	Args     []string `yaml:"args"`
+	Cron     string   `yaml:"cron"`
+	Hook     string   `yaml:"hook"`
 }
 
 var Config *OpsToolConfig = &OpsToolConfig{}
