@@ -13,6 +13,16 @@ scheduler:
     args:
       - "check"
     cron: "0 * * * *"
-    hook: "MM_INCOMING_HOOK_URL"
-    
+    hook: "HOOK"
+  - name: "Joke"
+    provider: "fun"
+    command: "joke"
+    cron: "*/5 * * * *"
+    hook: "HOOK"
+  - name: "Fortune"
+    provider: "fun"
+    command: "fortune"
+    cron: "*/15 * * *"
+    hook: "HOOK"    
+
 ...

@@ -1,0 +1,84 @@
+---
+
+- command: "pipelines"
+  subcommand: "mattermost-server"
+  name: "mattermost-server Pipelines"
+  description: "Get paged pipelines of mattermost-server ascending. Please provide page number as argument to get old executions.`/ops gitlab pipelines mattermost-server 2`"
+  vars:
+    - name: GITLAB_URL
+      value: https://git.internal.mattermost.com
+    - name: GITLAB_TOKEN
+      value: TOKEN
+    - name: REPO_ID
+      value: 163
+  exec: 
+    - scripts/gitlab/gitlab_pipelines.sh
+  response:
+    type: "ephemeral"
+    colors:
+    - color: "#0000ff"
+    template: |
+      {{ $length := len .Data }} {{ if eq $length 0 -}}
+        No pipeline found !
+      {{- else -}}
+        | Id | Reference | Hash | Status | Source | Created | Updated | 
+        | ---  | ---         | ---  | ---     | ---    |
+        {{range $i, $d := .Data -}}
+        | [{{ $d.id }}]({{ $d.web_url}}) | {{ $d.ref }} |[{{ $d.sha }}](https://github.com/mattermost/mattermost-server/commit/{{ $d.sha }}) | {{ $d.status }} | {{ $d.source }} | {{ $d.created_at }} | {{ $d.updated_at }} | 
+        {{end}}
+      {{ end }} 
+
+- command: "jobs"
+  subcommand: "mattermost-server"
+  name: "mattermost-server jobs"
+  description: "Get jobs of mattermost-server pipeline. `/ops gitlab jobs mattermost-server [pipeline_id]`"
+  vars:
+    - name: GITLAB_URL
+      value: https://git.internal.mattermost.com
+    - name: GITLAB_TOKEN
+      value: TOKEN
+    - name: REPO_ID
+      value: 163
+  exec: 
+    - scripts/gitlab/gitlab_pipeline_jobs.sh
+  response:
+    type: "ephemeral"
+    colors:
+    - color: "#0000ff"
+    template: |
+      {{ $length := len .Data }} {{ if eq $length 0 -}}
+        No pipeline job found !
+      {{- else -}}
+        | Id   | Name  | Stage | Status | Artifacts | Duration | Created | Started | Finished |
+        | ---  | ---   | ---   | ---    | ---       | --       | ---     | ----    | ---      |
+        {{range $i, $d := .Data -}}
+        | [{{ $d.id }}]({{ $d.web_url}}) | {{ $d.name }} | {{ $d.stage }} | {{ $d.status }} | {{ if $d.artifacts_file }} :white_check_mark:  {{else}}  - {{end}} | {{$d.duration}}(*Queue:{{$d.queued_duration}}*) | {{$d.created_at}} | {{$d.started_at}} | {{$d.finished_at}} |
+        {{end}}
+      {{ end }} 
+
+- command: "log"
+  subcommand: "mattermost-server"
+  name: "mattermost-server job log"
+  description: "Get log of mattermost-server pipeline job log. `/ops gitlab log mattermost-server [job_id]`"
+  vars:
+    - name: GITLAB_URL
+      value: https://git.internal.mattermost.com
+    - name: GITLAB_TOKEN
+      value: TOKEN
+    - name: REPO_ID
+      value: 163
+  exec: 
+    - scripts/gitlab/gitlab_pipeline_job_log.sh
+  response:
+    type: "ephemeral"
+    colors:
+    - color: "#0000ff"
+    template: |
+      {{ $length := len .Data }} {{ if eq $length 0 -}}
+        No pipeline job found !
+      {{- else -}}
+        ```
+        {{.Data}}
+        ```
+      {{ end }} 
+...

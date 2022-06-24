@@ -1,0 +1,30 @@
+---
+
+- command: "runners"
+  name: "List all Gitlab runners"
+  description: "Lists all GitLab runners with tags."
+  vars:
+    - name: GITLAB_URL
+      value: https://git.internal.mattermost.com
+    - name: GITLAB_TOKEN
+      value: TOKEN
+  exec: 
+    - scripts/gitlab/gitlab_runners.sh
+  response:
+    type: "ephemeral"
+    colors:
+    - color: "#000000"
+    template: |
+      {{ $length := len .Data }} {{ if eq $length 0 -}}
+        No runner is configured !
+      {{- else -}}
+        | Name | Description | Type | IP      | Online |
+        | ---  | ---         | ---  | ---     | ---    |
+        {{range $i, $d := .Data -}}
+        | {{ $d.name }} | {{ $d.description }} | {{ if eq $d.runner_type "instance_type" }} Instance {{ else }} Project {{ end }} | {{ $d.ip_address }} | {{ if $d.online }} :large_green_circle: {{ else }} :red_circle: {{ end }} | 
+        {{end}}
+      {{ end }}
+      
+      
+
+...
