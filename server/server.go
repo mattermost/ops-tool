@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -16,6 +17,13 @@ import (
 
 type healthResponse struct {
 	Info *version.Info `json:"info"`
+}
+
+type HookResponse struct {
+	Title        string
+	Color        string
+	ResponseType string
+	Body         string
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -31,87 +39,147 @@ func healthHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	}
 }
 
+func helpHookHandler(slashCommand *MMSlashCommand) (*HookResponse, error) {
+	keys := make([]string, 0, len(Providers))
+	for key := range Providers {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
+	for key := range keys {
+		opsCommand := Providers[keys[key]]
+		msg += fmt.Sprintf("\n| __%s__ | `%s %s` | *%s* |", opsCommand.Name, slashCommand.Command, keys[key], opsCommand.Description)
+	}
+	return &HookResponse{
+		Title:        "Provider List",
+		Color:        "#000000",
+		ResponseType: model.CommandResponseTypeEphemeral,
+		Body:         msg,
+	}, nil
+}
+
+func providerHelpHookHandler(slashCommand *MMSlashCommand, providerName string) (*HookResponse, error) {
+	providerCommand, found := Providers[providerName]
+	if !found {
+		return nil, fmt.Errorf("%s not found", providerName)
+	}
+	sort.Slice(providerCommand.ProvidedCommands, func(i, j int) bool {
+		return providerCommand.ProvidedCommands[i].Command < providerCommand.ProvidedCommands[j].Command
+	})
+	msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
+	for _, c := range providerCommand.ProvidedCommands {
+		if providerCommand.CanTrigger(slashCommand.Username) {
+			msg += fmt.Sprintf("\n| __%s__ | `%s %s %s %s` | *%s* |", c.Name, slashCommand.Command, providerCommand.Command, c.Command, c.SubCommand, c.Description)
+		}
+	}
+	return &HookResponse{
+		Title:        fmt.Sprintf("%s commands", providerCommand.Name),
+		Color:        "#000000",
+		ResponseType: model.CommandResponseTypeEphemeral,
+		Body:         msg,
+	}, nil
+}
+
+func providerCommandHookHandler(slashCommand *MMSlashCommand, providerName string, commandName string, args []string) (*HookResponse, error) {
+	providerCommand, found := Providers[providerName]
+	if !found {
+		return nil, fmt.Errorf("%s not found", providerName)
+	}
+	subCommand := ""
+	if len(args) > 0 {
+		subCommand = args[0]
+	}
+	var opsCommand *OpsCommand
+	commandFound := false
+	for i := range providerCommand.ProvidedCommands {
+		opsCommand = providerCommand.ProvidedCommands[i]
+		if opsCommand.Command == commandName && (opsCommand.SubCommand == "" || opsCommand.SubCommand == subCommand) {
+			commandFound = true
+			break
+		}
+	}
+	if !commandFound {
+		return nil, fmt.Errorf("%s %s not found", providerName, commandName)
+	}
+	if opsCommand.SubCommand != "" {
+		args = args[1:]
+	}
+	output, err := opsCommand.Execute(slashCommand, args)
+	if err != nil {
+		return nil, err
+	}
+	if opsCommand.Response.Generate {
+		msgColor := "#000000"
+		for _, responseColor := range opsCommand.Response.Colors {
+			if responseColor.Status == "" || responseColor.Status == output.Status { // Suport default color
+				msgColor = responseColor.Color
+				break
+			}
+		}
+
+		buf := bytes.NewBufferString("")
+		err = opsCommand.Response.Template.Execute(buf, output)
+		if err != nil {
+			return nil, err
+		}
+		return &HookResponse{
+			Title:        opsCommand.Name,
+			Color:        msgColor,
+			ResponseType: opsCommand.Response.Type,
+			Body:         buf.String(),
+		}, nil
+	}
+	return nil, nil
+
+}
+
 func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	command, err := ParseSlashCommand(r)
+	slashCommand, err := ParseSlashCommand(r)
 	if err != nil {
 		WriteErrorResponse(w, NewError("Unable to parse incoming slash command info", err))
 		return
 	}
-	if command.Token != Config.Token {
+	if slashCommand.Token != Config.Token {
 		WriteErrorResponse(w, NewError("Invalid comand token! Please check slash command tokens!", err))
 		return
 	}
-	LogInfo("Received command: %s at channel %s from %s", command.Text, command.ChannelName, command.Username)
-	if command.Text == "" || command.Text == "help" {
-		// lets sort the commands
-		keys := make([]string, 0, len(Commands))
-		for key := range Commands {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-
-		msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
-		for key := range keys {
-			opsCommand := Commands[keys[key]]
-			if opsCommand.CanTrigger(command.Username) {
-				msg += fmt.Sprintf("\n| __%s__ | `%s %s` | *%s* |", opsCommand.Name, command.Command, keys[key], opsCommand.Description)
-			}
-		}
-		WriteEnrichedResponse(w, "Supported Commands", msg, "#0000ff", model.CommandResponseTypeEphemeral)
+	LogInfo("Received command: %s at channel %s from %s", slashCommand.Text, slashCommand.ChannelName, slashCommand.Username)
+	parsedCommand := strings.Fields(strings.TrimSpace(slashCommand.Text))
+	var response *HookResponse
+	if len(parsedCommand) == 0 {
+		response, err = helpHookHandler(slashCommand)
+	} else if len(parsedCommand) == 1 {
+		response, err = providerHelpHookHandler(slashCommand, parsedCommand[0])
 	} else {
-		opsCommand, found := Commands[command.Text]
-		if !found {
-			WriteErrorResponse(w, NewError("Command not found", err))
-			return
-		}
-		if !opsCommand.CanTrigger(command.Username) {
-			WriteErrorResponse(w, NewError("You do not have permission to execute "+command.Command, err))
-			return
-		}
-		output, err := opsCommand.Execute(command)
-		if err != nil {
-			LogError("Error occurred while executing command! %v", err)
-			WriteErrorResponse(w, NewError("Command execution failed!", err))
-		} else if len(opsCommand.Provides) > 0 {
-			sort.Slice(opsCommand.ProvidedCommands, func(i, j int) bool {
-				return opsCommand.ProvidedCommands[i].Command < opsCommand.ProvidedCommands[j].Command
-			})
-			msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
-			for _, c := range opsCommand.ProvidedCommands {
-				if opsCommand.CanTrigger(command.Username) {
-					msg += fmt.Sprintf("\n| __%s__ | `%s %s` | *%s* |", c.Name, command.Command, c.Command, c.Description)
-				}
-			}
-			WriteEnrichedResponse(w, opsCommand.Name, msg, "#0000ff", model.CommandResponseTypeEphemeral)
-		} else if opsCommand.Response.Generate {
-			msgColor := "#000000"
-			for _, responseColor := range opsCommand.Response.Colors {
-				if responseColor.Status == output.Status {
-					msgColor = responseColor.Color
-					break
-				}
-			}
+		response, err = providerCommandHookHandler(slashCommand, parsedCommand[0], parsedCommand[1], parsedCommand[2:])
+	}
 
-			buf := bytes.NewBufferString("")
-			err = opsCommand.Response.Template.Execute(buf, output)
-			if err != nil {
-				LogError("Error occurred while rendering response! %v", err)
-				WriteErrorResponse(w, NewError("Command execution failed!", err))
-			} else {
-				WriteEnrichedResponse(w, opsCommand.Name, buf.String(), msgColor, opsCommand.Response.Type)
-			}
-		}
+	if err == nil {
+		WriteEnrichedResponse(w, response.Title, response.Body, response.Color, response.ResponseType)
+	} else {
+		LogError("Error while processing command %v", err)
+		WriteErrorResponse(w, NewError("Command execution failed!", err))
 	}
 }
 
 func scheduledJobHandler(scheduledCommand *ScheduledCommand, job gocron.Job) {
 	LogInfo("%s's last run: %s; next run: %s", scheduledCommand.Name, job.LastRun(), job.NextRun())
-	opsCommand, found := Commands[scheduledCommand.Command]
+	providerCommand, found := Providers[scheduledCommand.Provider]
 	if !found {
 		return
 	}
-
-	output, err := opsCommand.Execute(&MMSlashCommand{})
+	var opsCommand *OpsCommand
+	for i := range providerCommand.ProvidedCommands {
+		if providerCommand.ProvidedCommands[i].Command == scheduledCommand.Command {
+			opsCommand = providerCommand.ProvidedCommands[i]
+			break
+		}
+	}
+	if opsCommand == nil {
+		return
+	}
+	output, err := opsCommand.Execute(&MMSlashCommand{}, scheduledCommand.Args)
 	if err != nil {
 		LogError("Error occurred while executing command! %v", err)
 	} else if opsCommand.Response.Generate {

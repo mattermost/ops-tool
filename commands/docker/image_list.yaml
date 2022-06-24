@@ -1,6 +1,7 @@
 ---
 
-- command: "docker image list"
+- command: "image"
+  subcommand: "list"
   name: "List docker images"
   description: "List docker image available on the docker host."
   exec: 

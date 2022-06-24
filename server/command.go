@@ -13,6 +13,7 @@ import (
 
 type OpsCommand struct {
 	Command          string               `yaml:"command"`
+	SubCommand       string               `yaml:"subcommand"`
 	Name             string               `yaml:"name"`
 	Description      string               `yaml:"description"`
 	Provides         []string             `yaml:"provides"`
@@ -46,7 +47,7 @@ type OpsCommandOutput struct {
 	Data   interface{} `json:"data"`
 }
 
-var Commands map[string]*OpsCommand = make(map[string]*OpsCommand)
+var Providers map[string]*OpsCommand = make(map[string]*OpsCommand)
 
 func (cmd *OpsCommand) CanTrigger(username string) bool {
 	canTrigger := true
@@ -62,12 +63,16 @@ func (cmd *OpsCommand) CanTrigger(username string) bool {
 	return canTrigger
 }
 
-func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand) (*OpsCommandOutput, error) {
+func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand, args []string) (*OpsCommandOutput, error) {
 	output := &OpsCommandOutput{}
 	for _, step := range opsCmd.Exec {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		cmd := exec.Command("/bin/bash", "-c", step)
+		script := step
+		for i := range args {
+			script = fmt.Sprintf("%s %s", script, args[i])
+		}
+		cmd := exec.Command("/bin/bash", "-c", script)
 		cmd.Env = append(cmd.Env, os.Environ()...)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("CHANNEL_NAME=%s", mmCommand.ChannelName))
 		cmd.Env = append(cmd.Env, fmt.Sprintf("TEAM_NAME=%s", mmCommand.TeamName))
@@ -118,6 +123,7 @@ func loadCommands(commandsConfig []string) []*OpsCommand {
 
 			if len(command.Provides) > 0 {
 				command.ProvidedCommands = loadCommands(command.Provides)
+				Providers[command.Command] = &command
 			} else if command.Response.TemplateString != "" {
 				command.Response.Generate = true
 				t := template.New(command.Name)
@@ -128,7 +134,6 @@ func loadCommands(commandsConfig []string) []*OpsCommand {
 				command.Response.Template = t
 			} else {
 			}
-			Commands[command.Command] = &command
 			providedCommands = append(providedCommands, &command)
 		}
 	}

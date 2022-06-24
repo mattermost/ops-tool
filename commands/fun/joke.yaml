@@ -1,6 +1,6 @@
 ---
 
-- command: "fun joke"
+- command: "joke"
   name: "Get a random joke"
   description: "Get a random joke."
   exec:

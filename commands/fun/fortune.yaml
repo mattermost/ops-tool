@@ -1,6 +1,6 @@
 ---
 
-- command: "fun fortune"
+- command: "fortune"
   name: "Get a random fortune quote"
   description: "Get your daily fortune quote."
   exec:
