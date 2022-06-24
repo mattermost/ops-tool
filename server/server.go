@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -42,12 +43,19 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 	LogInfo("Received command: %s at channel %s from %s", command.Text, command.ChannelName, command.Username)
 	if command.Text == "" || command.Text == "help" {
-		msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
-		for key, opsCommand := range Commands {
-			if opsCommand.CanTrigger(command.Username) {
-				msg += fmt.Sprintf("\n| __%s__ | `%s %s` | *%s* |", opsCommand.Name, command.Command, key, opsCommand.Description)
-			}
+		// lets sort the commands
+		keys := make([]string, 0, len(Commands))
+		for key := range Commands {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
 
+		msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
+		for key := range keys {
+			opsCommand := Commands[keys[key]]
+			if opsCommand.CanTrigger(command.Username) {
+				msg += fmt.Sprintf("\n| __%s__ | `%s %s` | *%s* |", opsCommand.Name, command.Command, keys[key], opsCommand.Description)
+			}
 		}
 		WriteEnrichedResponse(w, "Supported Commands", msg, "#0000ff", model.CommandResponseTypeEphemeral)
 	} else {
@@ -64,6 +72,17 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		if err != nil {
 			LogError("Error occurred while executing command! %v", err)
 			WriteErrorResponse(w, NewError("Command execution failed!", err))
+		} else if len(opsCommand.Provides) > 0 {
+			sort.Slice(opsCommand.ProvidedCommands, func(i, j int) bool {
+				return opsCommand.ProvidedCommands[i].Command < opsCommand.ProvidedCommands[j].Command
+			})
+			msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
+			for _, c := range opsCommand.ProvidedCommands {
+				if opsCommand.CanTrigger(command.Username) {
+					msg += fmt.Sprintf("\n| __%s__ | `%s %s` | *%s* |", c.Name, command.Command, c.Command, c.Description)
+				}
+			}
+			WriteEnrichedResponse(w, opsCommand.Name, msg, "#0000ff", model.CommandResponseTypeEphemeral)
 		} else if opsCommand.Response.Generate {
 			msgColor := "#000000"
 			for _, responseColor := range opsCommand.Response.Colors {

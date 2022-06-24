@@ -12,13 +12,15 @@ import (
 )
 
 type OpsCommand struct {
-	Command     string               `yaml:"command"`
-	Name        string               `yaml:"name"`
-	Description string               `yaml:"description"`
-	Variables   []OpsCommandVariable `yaml:"vars"`
-	Exec        []string             `yaml:"exec"`
-	Response    OpsCommandResponse   `yaml:"response"`
-	Users       []string             `yaml:"users"`
+	Command          string               `yaml:"command"`
+	Name             string               `yaml:"name"`
+	Description      string               `yaml:"description"`
+	Provides         []string             `yaml:"provides"`
+	ProvidedCommands []*OpsCommand        `yaml:"-"`
+	Variables        []OpsCommandVariable `yaml:"vars"`
+	Exec             []string             `yaml:"exec"`
+	Response         OpsCommandResponse   `yaml:"response"`
+	Users            []string             `yaml:"users"`
 }
 
 type OpsCommandVariable struct {
@@ -92,8 +94,12 @@ func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand) (*OpsCommandOutput,
 }
 
 func LoadCommands() {
+	loadCommands(Config.CommandConfigurations)
+}
 
-	for _, commandConfiguration := range Config.CommandConfigurations {
+func loadCommands(commandsConfig []string) []*OpsCommand {
+	providedCommands := make([]*OpsCommand, 0)
+	for _, commandConfiguration := range commandsConfig {
 		LogInfo("Loading commands from " + commandConfiguration)
 		content, err := os.ReadFile(commandConfiguration)
 		if err != nil {
@@ -106,9 +112,13 @@ func LoadCommands() {
 		}
 		for i, _ := range commands {
 			command := commands[i]
+			command.Response.Generate = false
 
 			LogInfo("Command %s[%s]=%s", command.Name, command.Command, command.Description)
-			if command.Response.TemplateString != "" {
+
+			if len(command.Provides) > 0 {
+				command.ProvidedCommands = loadCommands(command.Provides)
+			} else if command.Response.TemplateString != "" {
 				command.Response.Generate = true
 				t := template.New(command.Name)
 				t, err := t.Parse(command.Response.TemplateString)
@@ -117,9 +127,10 @@ func LoadCommands() {
 				}
 				command.Response.Template = t
 			} else {
-				command.Response.Generate = false
 			}
 			Commands[command.Command] = &command
+			providedCommands = append(providedCommands, &command)
 		}
 	}
+	return providedCommands
 }

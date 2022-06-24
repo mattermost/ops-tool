@@ -1,0 +1,10 @@
+---
+
+- command: "docker"
+  name: "List docker commands"
+  description: "List docker related commands"
+  provides:
+    - commands/docker/image_list.yaml
+    - commands/docker/ps.yaml
+
+...
