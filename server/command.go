@@ -72,6 +72,7 @@ func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand, args []string) (*Op
 		for i := range args {
 			script = fmt.Sprintf("%s %s", script, args[i])
 		}
+		LogInfo("Will execute %s", script)
 		cmd := exec.Command("/bin/bash", "-c", script)
 		cmd.Env = append(cmd.Env, os.Environ()...)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("CHANNEL_NAME=%s", mmCommand.ChannelName))
