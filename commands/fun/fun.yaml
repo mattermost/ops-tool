@@ -1,0 +1,10 @@
+---
+
+- command: "fun"
+  name: "Fun related commands"
+  description: "Make your day!"
+  provides:
+    - commands/fun/joke.yaml
+    - commands/fun/fortune.yaml
+
+...

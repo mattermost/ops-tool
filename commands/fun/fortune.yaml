@@ -1,0 +1,14 @@
+---
+
+- command: "fun fortune"
+  name: "Get a random fortune quote"
+  description: "Get your daily fortune quote."
+  exec:
+    - scripts/fun/fortune.sh
+  response:
+    type: "ephemeral"
+    template: |
+      {{ range .Data }}
+      {{ .fortune }}
+      {{ end }}
+...

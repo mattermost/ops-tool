@@ -1,0 +1,14 @@
+---
+
+- command: "fun joke"
+  name: "Get a random joke"
+  description: "Get a random joke."
+  exec:
+    - scripts/fun/joke.sh
+  response:
+    type: "ephemeral"
+    template: |
+      {{ range .Data }}
+      {{ .joke }}
+      {{ end }}
+...
