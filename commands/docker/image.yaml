@@ -1,0 +1,41 @@
+---
+
+- command: "image"
+  subcommand: "list"
+  name: "List docker images"
+  description: "List docker image available on the docker host."
+  exec: 
+    - scripts/docker/image_list.sh
+  response:
+    type: "ephemeral"
+    template: |
+      | Repository | Tag | ID | Created | Size |
+      |---|---|---|---|---|
+      {{range $i, $a := .Data -}}
+      | {{ $a.Repository }} | {{ $a.Tag }} | {{ $a.ID }} | {{ $a.CreatedAt }}| {{ $a.Size }} |
+      {{end}}
+
+- command: "image"
+  subcommand: "inspect"
+  name: "Inspect docker images"
+  description: "Inspect docker image. Usage `docker image inspect [image_id]`"
+  exec: 
+    - scripts/docker/image_inspect.sh
+  response:
+    type: "ephemeral"
+    template: |
+      ```yml
+      {{toHTMLUnescapedYaml .Data}}
+      ```
+
+- command: "image"
+  subcommand: "digest"
+  name: "Display image digest"
+  description: "Display image digest. Usage `docker image digest [image_id]`"
+  exec: 
+    - scripts/docker/image_inspect.sh digest-only
+  response:
+    type: "ephemeral"
+    template: |
+      {{.Data}}
+...
