@@ -7,5 +7,6 @@
     - commands/docker/image_list.yaml
     - commands/docker/ps.yaml
     - commands/docker/inspect.yaml
+    - commands/docker/logs.yaml
 
 ...

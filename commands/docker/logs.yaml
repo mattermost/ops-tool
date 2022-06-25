@@ -1,0 +1,15 @@
+---
+
+- command: "logs"
+  name: "logs for a docker container"
+  description: "Retrieve and display logs for a docker container"
+  exec: 
+    - scripts/docker/logs.sh
+  response:
+    type: "ephemeral"
+    template: |
+      ```
+      {{htmlUnescape .Data}}
+      ```
+
+...
