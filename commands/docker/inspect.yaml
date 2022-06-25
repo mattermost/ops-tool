@@ -2,14 +2,14 @@
 
 - command: "inspect"
   name: "Inspect docker container"
-  description: "Inspect docker container"
+  description: "Inspect docker container. Usage `docker inspect [container_id]`"
   exec: 
     - scripts/docker/inspect.sh
   response:
     type: "ephemeral"
     template: |
       ```yml
-      {{toYaml .Data}}
+      {{toHTMLUnescapedYaml .Data}}
       ```
 
 ...

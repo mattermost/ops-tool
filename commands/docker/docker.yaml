@@ -4,7 +4,7 @@
   name: "List docker commands"
   description: "List docker related commands"
   provides:
-    - commands/docker/image_list.yaml
+    - commands/docker/image.yaml
     - commands/docker/ps.yaml
     - commands/docker/inspect.yaml
     - commands/docker/logs.yaml

@@ -8,8 +8,9 @@ import (
 
 func createTemplate(name string, tpl string) (*template.Template, error) {
 	return template.New(name).Funcs(template.FuncMap{
-		"toYaml":       toYaml,
-		"htmlUnescape": htmlUnescape,
+		"toYaml":              toYaml,
+		"htmlUnescape":        htmlUnescape,
+		"toHTMLUnescapedYaml": toHTMLUnescapedYaml,
 	}).Parse(tpl)
 }
 
@@ -23,4 +24,8 @@ func toYaml(v interface{}) string {
 
 func htmlUnescape(s string) template.HTML {
 	return template.HTML(s)
+}
+
+func toHTMLUnescapedYaml(v interface{}) template.HTML {
+	return htmlUnescape(toYaml(v))
 }
