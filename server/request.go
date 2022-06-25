@@ -39,10 +39,10 @@ func SendViaIncomingHook(hook, title, text, color string) {
 	response, error := client.Do(request)
 	if error != nil {
 		LogError("[%s]Error occured while sending data to %s. %v", title, hook, error)
+		return
 	}
 
 	if response.StatusCode != 200 {
 		LogError("[%s]Got %d while invoking %s.", title, response.StatusCode, hook)
 	}
-
 }
