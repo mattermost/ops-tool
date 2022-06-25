@@ -8,5 +8,6 @@
     - commands/docker/ps.yaml
     - commands/docker/inspect.yaml
     - commands/docker/logs.yaml
+    - commands/docker/cosign.yaml
 
 ...

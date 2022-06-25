@@ -124,7 +124,7 @@ func providerCommandHookHandler(slashCommand *MMSlashCommand, providerName strin
 			return nil, err
 		}
 		return &HookResponse{
-			Title:        opsCommand.Name,
+			Title:        fmt.Sprintf("%s - %s %s", opsCommand.Name, slashCommand.Command, slashCommand.Text),
 			Color:        msgColor,
 			ResponseType: opsCommand.Response.Type,
 			Body:         buf.String(),

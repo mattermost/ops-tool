@@ -1,0 +1,32 @@
+---
+
+- command: "cosign"
+  subcommand: "verify"
+  name: "Verify signature of an image"
+  description: "Verify signature of an image. usage: `docker cosign verify [image]`"
+  exec: 
+    - scripts/docker/cosign_verify.sh
+  vars:
+    # COSIGN_PUB_KEY accepts any value accepted by the --key argument.
+    # `cosign verify -h` for more detail
+    - name: COSIGN_PUB_KEY
+      value: COSIGN_PUB_KEY_PATH
+  response:
+    type: "ephemeral"
+    colors:
+    - color: "#ff0000"
+      status: "error"
+    - color: "#00ff00"
+      status: "success"
+    template: |
+      {{ if eq .Status "error" }}
+      {{ .Data.text }}
+      {{ else }}
+      {{ .Data.text }}
+      ```yml
+      {{toHTMLUnescapedYaml .Data.json}}
+      ```
+      {{ end }}  
+
+      
+...
