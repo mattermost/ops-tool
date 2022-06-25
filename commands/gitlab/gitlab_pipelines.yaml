@@ -5,10 +5,6 @@
   name: "mattermost-server Pipelines"
   description: "Get paged pipelines of mattermost-server ascending. Please provide page number as argument to get old executions.`/ops gitlab pipelines mattermost-server 2`"
   vars:
-    - name: GITLAB_URL
-      value: https://git.internal.mattermost.com
-    - name: GITLAB_TOKEN
-      value: TOKEN
     - name: REPO_ID
       value: 163
   exec: 
@@ -33,10 +29,6 @@
   name: "mattermost-server jobs"
   description: "Get jobs of mattermost-server pipeline. `/ops gitlab jobs mattermost-server [pipeline_id]`"
   vars:
-    - name: GITLAB_URL
-      value: https://git.internal.mattermost.com
-    - name: GITLAB_TOKEN
-      value: TOKEN
     - name: REPO_ID
       value: 163
   exec: 
@@ -61,10 +53,6 @@
   name: "mattermost-server job log"
   description: "Get log of mattermost-server pipeline job log. `/ops gitlab log mattermost-server [job_id]`"
   vars:
-    - name: GITLAB_URL
-      value: https://git.internal.mattermost.com
-    - name: GITLAB_TOKEN
-      value: TOKEN
     - name: REPO_ID
       value: 163
   exec: 

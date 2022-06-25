@@ -3,11 +3,6 @@
 - command: "version"
   name: "Get GitLab Version"
   description: "Gets gitlab version. `gitlab version check` will do upgrade check!"
-  vars:
-    - name: GITLAB_URL
-      value: https://git.internal.mattermost.com
-    - name: GITLAB_TOKEN
-      value: TOKEN
   exec: 
     - scripts/gitlab/gitlab_version.sh
   response:

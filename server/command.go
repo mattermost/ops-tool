@@ -100,10 +100,10 @@ func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand, args []string) (*Op
 }
 
 func LoadCommands() {
-	loadCommands(Config.CommandConfigurations)
+	loadCommands(Config.CommandConfigurations, []OpsCommandVariable{})
 }
 
-func loadCommands(commandsConfig []string) []*OpsCommand {
+func loadCommands(commandsConfig []string, variables []OpsCommandVariable) []*OpsCommand {
 	providedCommands := make([]*OpsCommand, 0)
 	for _, commandConfiguration := range commandsConfig {
 		LogInfo("Loading commands from " + commandConfiguration)
@@ -120,10 +120,13 @@ func loadCommands(commandsConfig []string) []*OpsCommand {
 			command := commands[i]
 			command.Response.Generate = false
 
+			// inherit variables from parent and append our own
+			command.Variables = dedup(append(variables, command.Variables...))
+
 			LogInfo("Command %s[%s]=%s", command.Name, command.Command, command.Description)
 
 			if len(command.Provides) > 0 {
-				command.ProvidedCommands = loadCommands(command.Provides)
+				command.ProvidedCommands = loadCommands(command.Provides, command.Variables)
 				Providers[command.Command] = &command
 			} else if command.Response.TemplateString != "" {
 				command.Response.Generate = true
@@ -138,4 +141,20 @@ func loadCommands(commandsConfig []string) []*OpsCommand {
 		}
 	}
 	return providedCommands
+}
+
+func dedup(opsCommandVariable []OpsCommandVariable) []OpsCommandVariable {
+	keys := make(map[string]int, 0)
+	deduped := make([]OpsCommandVariable, 0)
+	for i, _ := range opsCommandVariable {
+		// if we already saw this variable, replace its value
+		if key, ok := keys[opsCommandVariable[i].Name]; ok {
+			deduped[key] = opsCommandVariable[i]
+		} else {
+			keys[opsCommandVariable[i].Name] = i
+			deduped = append(deduped, opsCommandVariable[i])
+		}
+	}
+
+	return deduped
 }

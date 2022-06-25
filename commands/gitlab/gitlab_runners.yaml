@@ -3,11 +3,6 @@
 - command: "runners"
   name: "List all Gitlab runners"
   description: "Lists all GitLab runners with tags."
-  vars:
-    - name: GITLAB_URL
-      value: https://git.internal.mattermost.com
-    - name: GITLAB_TOKEN
-      value: TOKEN
   exec: 
     - scripts/gitlab/gitlab_runners.sh
   response:
