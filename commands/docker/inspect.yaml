@@ -1,0 +1,15 @@
+---
+
+- command: "inspect"
+  name: "Inspect docker container"
+  description: "Inspect docker container"
+  exec: 
+    - scripts/docker/inspect.sh
+  response:
+    type: "ephemeral"
+    template: |
+      ```yml
+      {{toYaml .Data}}
+      ```
+
+...

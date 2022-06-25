@@ -127,8 +127,7 @@ func loadCommands(commandsConfig []string) []*OpsCommand {
 				Providers[command.Command] = &command
 			} else if command.Response.TemplateString != "" {
 				command.Response.Generate = true
-				t := template.New(command.Name)
-				t, err := t.Parse(command.Response.TemplateString)
+				t, err := createTemplate(command.Name, command.Response.TemplateString)
 				if err != nil {
 					LogCritical("Error rendering template file for command %s err= %v", command.Name, err)
 				}
