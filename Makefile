@@ -373,13 +373,3 @@ else
 	-t $(GITHUB_TOKEN) || ${FAIL}
 	@$(OK) Notice.txt is generated!
 endif
-
-.PHONY: check-notice-file
-check-notice-file: generate-notice-file ## Ensure that Notice.txt contains all dependencies
-CHANGED=$(git diff origin/${CURRENT_BRANCH} NOTICE.txt | wc -l)
-
-ifneq ($(CHANGED), 0)
-	$(error "Please update Notice.txt file")
-else
-	@$(OK) Notice.txt is up to date!
-endif          
