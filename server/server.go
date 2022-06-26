@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -287,6 +288,8 @@ func scheduledJobHandler(scheduledCommand *ScheduledCommand, job gocron.Job) {
 	}
 }
 
+var server *http.Server
+
 func Start() {
 	LoadConfig("config.yaml")
 	LoadCommands()
@@ -307,7 +310,21 @@ func Start() {
 	router.POST("/dialog", dialogHandler)
 
 	LogInfo("Running OpsTool on port " + Config.Listen)
-	if err := http.ListenAndServe(Config.Listen, router); err != nil {
-		LogError(err.Error())
+	server = &http.Server{Addr: Config.Listen, Handler: router}
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			LogError(err.Error())
+			panic(err)
+		}
+	}()
+}
+
+func Stop() {
+	if server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			panic(err) // failure/timeout shutting down the server gracefully
+		}
 	}
 }
