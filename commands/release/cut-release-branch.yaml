@@ -12,9 +12,9 @@
     - julien
   dialog:
     title: Cut Release Branch
-    url: https://ops-tool.cloud.mattermost.com/api/v4/actions/dialogs/open
-    callbackUrl: https://3b3a-185-148-86-26.eu.ngrok.io/dialog
-    hook: https://ops-tool.cloud.mattermost.com/hooks/83d13meogjbrtxkydt1mfijd9w
+    url: MM_URL/api/v4/actions/dialogs/open
+    callbackUrl: TOOL_URL/dialog
+    hook: MM_INCOMING_HOOK
     introduction_text: Prepare repositories for the next release.
     elements:
       - name: BRANCH_DEST 
@@ -43,21 +43,20 @@
   response:
     type: "in_channel"
     colors:
-    - color: "#ff0000"
     - color: "#0000ff"
       status: "cut"
+    - color: "#ff0000"
     template: |
       {{ if eq .Status "cut" }}
         Release Cut pipelines are successfully started!
-
-        * __Version__: {{ .Data.SEMVER_RELEASE }}
-        * __Branch__: {{ .Data.BRANCH_DEST }}
-        * __Mobile Branch__: {{ .Data.BRANCH_DEST_MOBILE }}
+        
       {{- else -}}
-        Error while triggering release cut pipelines.
-
         {{ .Data.error }}
 
       {{ end }}
+        
+        * __Version__: {{ .Data.SEMVER_RELEASE }}
+        * __Branch__: {{ .Data.BRANCH_DEST }}
+        * __Mobile Branch__: {{ .Data.BRANCH_DEST_MOBILE }}
       
 ...

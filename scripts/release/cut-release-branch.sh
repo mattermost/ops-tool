@@ -24,7 +24,10 @@ retVal=$?
 if [ $retVal -ne 0 ]
 then
     jq  --null-input \
-        '{"status": "commit_error",  "data": { msg:"It is already configured.", "SEMVER_RELEASE": $version,"BRANCH_DEST": $branch,"BRANCH_DEST_MOBILE": $branch_mobile }}'
+        --arg branch "$BRANCH_DEST" \
+        --arg branch_mobile "$BRANCH_DEST_MOBILE" \
+        --arg version "$SEMVER_RELEASE" \
+        '{"status": "commit_error",  "data": { "error":"It is already configured.", "SEMVER_RELEASE": $version,"BRANCH_DEST": $branch,"BRANCH_DEST_MOBILE": $branch_mobile }}'
     deleteRepo
     exit 0
 fi
