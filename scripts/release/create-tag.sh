@@ -19,7 +19,8 @@ if [ "$(git tag -l "${RELEASE_TAG}")" ]; then
     jq  --null-input \
         --arg tag "$RELEASE_TAG" \
         --arg branch "$BRANCH_NAME" \
-        '{"status": "tag_exists",  "data": { "error":"Tag is already created!","BRANCH_NAME": $branch,"RELEASE_TAG": $tag }}'
+        --arg dry "$DRY_RUN" \
+        '{"status": "tag_exists",  "data": { "error":"Tag is already created!","BRANCH_NAME": $branch,"RELEASE_TAG": $tag,"DRY_RUN": $dry }}'
     deleteRepo
     exit 0
 fi
@@ -33,20 +34,21 @@ then
         jq  --null-input \
             --arg tag "$RELEASE_TAG" \
             --arg branch "$BRANCH_NAME" \
-            '{"status": "missing_branch",  "data": { "error":"Can not find branch!","BRANCH_NAME": $branch,"RELEASE_TAG": $tag }}'
+            --arg dry "$DRY_RUN"
+            '{"status": "missing_branch",  "data": { "error":"Can not find branch!","BRANCH_NAME": $branch,"RELEASE_TAG": $tag,"DRY_RUN": $dry }}'
         deleteRepo
         exit 0
     fi
 fi
 
-git tag -l "${RELEASE_TAG}"
+git tag "${RELEASE_TAG}"
 
 if [ "${DRY_RUN}" == "no" ]
 then
     git push origin ${RELEASE_TAG}
     retVal=$?
 else
-    git push --dry_run origin ${RELEASE_TAG}
+    git push --dry-run origin ${RELEASE_TAG}
     retVal=$?
 fi
 
@@ -55,6 +57,7 @@ deleteRepo
 jq  --null-input \
         --arg tag "$RELEASE_TAG" \
         --arg branch "$BRANCH_NAME" \
-        '{"status": "tag",  "data": { "BRANCH_NAME": $branch,"RELEASE_TAG": $tag }}'
+        --arg dry "$DRY_RUN"
+        '{"status": "tag",  "data": { "BRANCH_NAME": $branch,"RELEASE_TAG": $tag,"DRY_RUN": $dry }}'
     
 
