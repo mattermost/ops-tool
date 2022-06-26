@@ -18,30 +18,30 @@
     introduction_text: Prepare repositories for the next release.
     elements:
       - name: BRANCH_DEST 
-        title: Release Branch Name
+        display_name: Release Branch Name
         type: text
         subtype: text
         optional: false
         default: release-7.0
         help_text: Determines the branch name will be created.
       - name: BRANCH_DEST_MOBILE 
-        title: Mobile Release Branch Name
+        display_name: Mobile Release Branch Name
         type: text
         subtype: text
         optional: false
         default: release-1.53
         help_text: Determines the branch name for mobile project to be created.
       - name: SEMVER_RELEASE 
-        title: Server Version
+        display_name: Server Version
         type: text
         subtype: text
         optional: false
         default: 7.0.0
-        help_text: Version number.
+        help_text: Version number
   exec: 
     - scripts/release/cut-release-branch.sh
   response:
-    type: "in_channel"
+    type: "ephemeral"
     colors:
     - color: "#0000ff"
       status: "cut"

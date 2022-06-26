@@ -153,14 +153,18 @@ func sendDialogCallback(opsCommand *OpsCommand, slashCommand *MMSlashCommand) {
 	for _, opsElem := range opsCommand.Dialog.Elements {
 		elements = append(elements, model.DialogElement{
 			Name:        opsElem.Name,
-			DisplayName: opsElem.Title,
+			DisplayName: opsElem.DisplayName,
 			Type:        opsElem.Type,
 			SubType:     opsElem.SubType,
 			Default:     opsElem.Default,
 			Optional:    opsElem.Optional,
 			HelpText:    opsElem.HelpText,
+			Placeholder: opsElem.Placeholder,
+			MinLength:   opsElem.MinLength,
+			MaxLength:   opsElem.MaxLength,
 		})
 	}
+
 	request := &model.OpenDialogRequest{
 		TriggerId: slashCommand.TriggerID,
 		URL:       opsCommand.Dialog.CallbackURL,

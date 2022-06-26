@@ -32,7 +32,7 @@ then
     exit 0
 fi
 
-git --dry-run push
+git push --dry-run 
 
 deleteRepo
 
