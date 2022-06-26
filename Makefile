@@ -358,7 +358,7 @@ clean: ## to clean-up
 	@$(OK) cleaning /${GO_OUT_BIN_DIR} folder
 
 .PHONY: generate-notice-file
-generate-notice-file:
+generate-notice-file: ## Generate Notice.txt from dependencies
 ifeq ($(GITHUB_TOKEN), a_token)
 	$(error "Please provide your GitHub Token in GITHUB_TOKEN variable.")
 else
@@ -373,3 +373,13 @@ else
 	-t $(GITHUB_TOKEN) || ${FAIL}
 	@$(OK) Notice.txt is generated!
 endif
+
+.PHONY: check-notice-file
+check-notice-file: generate-notice-file ## Ensure that Notice.txt contains all dependencies
+CHANGED=$(git diff origin/${CURRENT_BRANCH} NOTICE.txt | wc -l)
+
+ifneq ($(CHANGED), 0)
+	$(error "Please update Notice.txt file")
+else
+	@$(OK) Notice.txt is up to date!
+endif          
