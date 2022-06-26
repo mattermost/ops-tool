@@ -112,7 +112,7 @@ func providerCommandHookHandler(slashCommand *MMSlashCommand, providerName strin
 	if opsCommand.Response.Generate {
 		msgColor := "#000000"
 		for _, responseColor := range opsCommand.Response.Colors {
-			if responseColor.Status == "" || responseColor.Status == output.Status { // Suport default color
+			if responseColor.Status == "" || responseColor.Status == output.Status { // Support default color
 				msgColor = responseColor.Color
 				break
 			}
@@ -131,7 +131,6 @@ func providerCommandHookHandler(slashCommand *MMSlashCommand, providerName strin
 		}, nil
 	}
 	return nil, nil
-
 }
 
 func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -147,11 +146,13 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	LogInfo("Received command: %s at channel %s from %s", slashCommand.Text, slashCommand.ChannelName, slashCommand.Username)
 	parsedCommand := strings.Fields(strings.TrimSpace(slashCommand.Text))
 	var response *HookResponse
-	if len(parsedCommand) == 0 {
+
+	switch len(parsedCommand) {
+	case 0:
 		response, err = helpHookHandler(slashCommand)
-	} else if len(parsedCommand) == 1 {
+	case 1:
 		response, err = providerHelpHookHandler(slashCommand, parsedCommand[0])
-	} else {
+	default:
 		response, err = providerCommandHookHandler(slashCommand, parsedCommand[0], parsedCommand[1], parsedCommand[2:])
 	}
 
@@ -223,5 +224,4 @@ func Start() {
 	if err := http.ListenAndServe(Config.Listen, router); err != nil {
 		LogError(err.Error())
 	}
-
 }

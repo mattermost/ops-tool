@@ -49,11 +49,11 @@ type OpsCommandOutput struct {
 
 var Providers map[string]*OpsCommand = make(map[string]*OpsCommand)
 
-func (cmd *OpsCommand) CanTrigger(username string) bool {
+func (opsCmd *OpsCommand) CanTrigger(username string) bool {
 	canTrigger := true
-	if cmd.Users != nil {
+	if opsCmd.Users != nil {
 		canTrigger = false
-		for _, user := range cmd.Users {
+		for _, user := range opsCmd.Users {
 			if user == username {
 				canTrigger = true
 				break
@@ -100,10 +100,10 @@ func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand, args []string) (*Op
 }
 
 func LoadCommands() {
-	loadCommands(Config.CommandConfigurations)
+	loadCommands(Config.CommandConfigurations, []OpsCommandVariable{})
 }
 
-func loadCommands(commandsConfig []string) []*OpsCommand {
+func loadCommands(commandsConfig []string, variables []OpsCommandVariable) []*OpsCommand {
 	providedCommands := make([]*OpsCommand, 0)
 	for _, commandConfiguration := range commandsConfig {
 		LogInfo("Loading commands from " + commandConfiguration)
@@ -116,26 +116,46 @@ func loadCommands(commandsConfig []string) []*OpsCommand {
 		if err != nil {
 			LogCritical("Error reading command file=%s err= %v", commandConfiguration, err)
 		}
-		for i, _ := range commands {
+		for i := range commands {
 			command := commands[i]
 			command.Response.Generate = false
 
+			// inherit variables from parent and append our own
+			command.Variables = dedup(append(variables, command.Variables...))
+
 			LogInfo("Command %s[%s]=%s", command.Name, command.Command, command.Description)
 
-			if len(command.Provides) > 0 {
-				command.ProvidedCommands = loadCommands(command.Provides)
+			switch {
+			case len(command.Provides) > 0:
+				command.ProvidedCommands = loadCommands(command.Provides, command.Variables)
 				Providers[command.Command] = &command
-			} else if command.Response.TemplateString != "" {
+			case command.Response.TemplateString != "":
 				command.Response.Generate = true
 				t, err := createTemplate(command.Name, command.Response.TemplateString)
 				if err != nil {
 					LogCritical("Error rendering template file for command %s err= %v", command.Name, err)
 				}
 				command.Response.Template = t
-			} else {
 			}
+
 			providedCommands = append(providedCommands, &command)
 		}
 	}
 	return providedCommands
+}
+
+func dedup(opsCommandVariable []OpsCommandVariable) []OpsCommandVariable {
+	keys := make(map[string]int, 0)
+	deduped := make([]OpsCommandVariable, 0)
+	for i := range opsCommandVariable {
+		// if we already saw this variable, replace its value
+		if key, ok := keys[opsCommandVariable[i].Name]; ok {
+			deduped[key] = opsCommandVariable[i]
+		} else {
+			keys[opsCommandVariable[i].Name] = i
+			deduped = append(deduped, opsCommandVariable[i])
+		}
+	}
+
+	return deduped
 }

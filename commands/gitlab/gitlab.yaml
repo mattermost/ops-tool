@@ -3,6 +3,11 @@
 - command: "gitlab"
   name: "List gitlab commands"
   description: "List gitlab related commands"
+  vars:
+    - name: GITLAB_URL
+      value: https://git.internal.mattermost.com
+    - name: GITLAB_TOKEN
+      value: TOKEN
   provides:
     - commands/gitlab/gitlab_version.yaml
     - commands/gitlab/gitlab_runners.yaml
