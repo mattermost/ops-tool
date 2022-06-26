@@ -52,6 +52,7 @@ Sample command output: `/ops gitlab version check`
 Essentials:
 
 1. Install [Go](https://golang.org/doc/install)
+2. Install [jq](https://stedolan.github.io/jq/download/)
 
 Optionals:
 
