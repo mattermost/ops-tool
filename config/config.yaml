@@ -6,23 +6,27 @@ commands:
   - commands/gitlab/gitlab.yaml
   - commands/docker/docker.yaml
   - commands/fun/fun.yaml
+  - commands/release/release.yaml
 scheduler:
   - name: "Check Gitlab Version"
     provider: "gitlab"
     command: "version"
+    channel: "ops-tool-notifications"
     args:
       - "check"
     cron: "0 * * * *"
     hook: "HOOK"
   - name: "Joke"
+    channel: "fun"
     provider: "fun"
     command: "joke"
     cron: "*/5 * * * *"
     hook: "HOOK"
   - name: "Fortune"
+    channel: "fun"
     provider: "fun"
     command: "fortune"
-    cron: "*/15 * * *"
-    hook: "HOOK"    
-
+    cron: "*/6 * * *"
+    hook: "HOOK"
+    
 ...

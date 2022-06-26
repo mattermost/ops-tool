@@ -1,0 +1,63 @@
+---
+
+- command: "cut"
+  name: "Cut Release Branch"
+  description: "Prepare repositories for the next release."
+  vars:
+    - name: REPO_URL
+      value: git@git.internal.mattermost.com:ci/cut-release-branch.git
+  users:
+    - mkara
+    - akis
+    - julien
+  dialog:
+    title: Cut Release Branch
+    url: https://ops-tool.cloud.mattermost.com/api/v4/actions/dialogs/open
+    callbackUrl: https://3b3a-185-148-86-26.eu.ngrok.io/dialog
+    hook: https://ops-tool.cloud.mattermost.com/hooks/83d13meogjbrtxkydt1mfijd9w
+    introduction_text: Prepare repositories for the next release.
+    elements:
+      - name: BRANCH_DEST 
+        title: Release Branch Name
+        type: text
+        subtype: text
+        optional: false
+        default: release-7.0
+        help_text: Determines the branch name will be created.
+      - name: BRANCH_DEST_MOBILE 
+        title: Mobile Release Branch Name
+        type: text
+        subtype: text
+        optional: false
+        default: release-1.53
+        help_text: Determines the branch name for mobile project to be created.
+      - name: SEMVER_RELEASE 
+        title: Server Version
+        type: text
+        subtype: text
+        optional: false
+        default: 7.0.0
+        help_text: Version number.
+  exec: 
+    - scripts/release/cut-release-branch.sh
+  response:
+    type: "in_channel"
+    colors:
+    - color: "#ff0000"
+    - color: "#0000ff"
+      status: "cut"
+    template: |
+      {{ if eq .Status "cut" }}
+        Release Cut pipelines are successfully started!
+
+        * __Version__: {{ .Data.SEMVER_RELEASE }}
+        * __Branch__: {{ .Data.BRANCH_DEST }}
+        * __Mobile Branch__: {{ .Data.BRANCH_DEST_MOBILE }}
+      {{- else -}}
+        Error while triggering release cut pipelines.
+
+        {{ .Data.error }}
+
+      {{ end }}
+      
+...

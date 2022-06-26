@@ -16,6 +16,7 @@ type OpsToolConfig struct {
 
 type ScheduledCommand struct {
 	Name     string   `yaml:"name"`
+	Channel  string   `yaml:"channel"`
 	Provider string   `yaml:"provider"`
 	Command  string   `yaml:"command"`
 	Args     []string `yaml:"args"`
