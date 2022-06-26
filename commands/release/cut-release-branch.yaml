@@ -1,0 +1,62 @@
+---
+
+- command: "cut"
+  name: "Cut Release Branch"
+  description: "Prepare repositories for the next release."
+  vars:
+    - name: REPO_URL
+      value: git@git.internal.mattermost.com:ci/cut-release-branch.git
+  users:
+    - mkara
+    - akis
+    - julien
+  dialog:
+    title: Cut Release Branch
+    url: MM_URL/api/v4/actions/dialogs/open
+    callbackUrl: TOOL_URL/dialog
+    hook: MM_INCOMING_HOOK
+    introduction_text: Prepare repositories for the next release.
+    elements:
+      - name: BRANCH_DEST 
+        title: Release Branch Name
+        type: text
+        subtype: text
+        optional: false
+        default: release-7.0
+        help_text: Determines the branch name will be created.
+      - name: BRANCH_DEST_MOBILE 
+        title: Mobile Release Branch Name
+        type: text
+        subtype: text
+        optional: false
+        default: release-1.53
+        help_text: Determines the branch name for mobile project to be created.
+      - name: SEMVER_RELEASE 
+        title: Server Version
+        type: text
+        subtype: text
+        optional: false
+        default: 7.0.0
+        help_text: Version number.
+  exec: 
+    - scripts/release/cut-release-branch.sh
+  response:
+    type: "in_channel"
+    colors:
+    - color: "#0000ff"
+      status: "cut"
+    - color: "#ff0000"
+    template: |
+      {{ if eq .Status "cut" }}
+        Release Cut pipelines are successfully started!
+        
+      {{- else -}}
+        {{ .Data.error }}
+
+      {{ end }}
+        
+        * __Version__: {{ .Data.SEMVER_RELEASE }}
+        * __Branch__: {{ .Data.BRANCH_DEST }}
+        * __Mobile Branch__: {{ .Data.BRANCH_DEST_MOBILE }}
+      
+...

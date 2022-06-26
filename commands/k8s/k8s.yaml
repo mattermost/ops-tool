@@ -1,0 +1,9 @@
+---
+
+- command: "k8s"
+  name: "List k8s commands"
+  description: "List k8s related commands"
+  provides:
+    - commands/k8s/logs.yaml
+
+...

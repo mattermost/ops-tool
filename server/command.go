@@ -22,6 +22,7 @@ type OpsCommand struct {
 	Exec             []string             `yaml:"exec"`
 	Response         OpsCommandResponse   `yaml:"response"`
 	Users            []string             `yaml:"users"`
+	Dialog           *OpsCommandDialog    `yaml:"dialog"`
 }
 
 type OpsCommandVariable struct {
@@ -47,6 +48,25 @@ type OpsCommandOutput struct {
 	Data   interface{} `json:"data"`
 }
 
+type OpsCommandDialog struct {
+	Title       string                     `yaml:"title"`
+	URL         string                     `yaml:"url"`
+	CallbackURL string                     `yaml:"callbackUrl"`
+	MMHookURL   string                     `yaml:"hook"`
+	Text        string                     `yaml:"introduction_text"`
+	Elements    []*OpsCommandDialogElement `yaml:"elements"`
+}
+
+type OpsCommandDialogElement struct {
+	Name     string `yaml:"name"`
+	Title    string `yaml:"title"`
+	Type     string `yaml:"type"`
+	SubType  string `yaml:"subtype"`
+	Optional bool   `yaml:"optional"`
+	Default  string `yaml:"default"`
+	HelpText string `yaml:"help_text"`
+}
+
 var Providers map[string]*OpsCommand = make(map[string]*OpsCommand)
 
 func (opsCmd *OpsCommand) CanTrigger(username string) bool {
@@ -63,7 +83,7 @@ func (opsCmd *OpsCommand) CanTrigger(username string) bool {
 	return canTrigger
 }
 
-func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand, args []string) (*OpsCommandOutput, error) {
+func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand, args []string, envValues map[string]string) (*OpsCommandOutput, error) {
 	output := &OpsCommandOutput{}
 	for _, step := range opsCmd.Exec {
 		var stdout bytes.Buffer
@@ -81,6 +101,9 @@ func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand, args []string) (*Op
 		cmd.Env = append(cmd.Env, fmt.Sprintf("COMMAND_TEXT=%s", mmCommand.Text))
 		for _, cmdVar := range opsCmd.Variables {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", cmdVar.Name, cmdVar.Value))
+		}
+		for envKey, envValue := range envValues {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", envKey, envValue))
 		}
 		cmd.Stdout = &stdout
 		cmd.Stderr = &stderr

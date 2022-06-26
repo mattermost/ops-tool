@@ -1,0 +1,11 @@
+- command: "release"
+  name: "Release Team Commands"
+  description: "Release Team Commands"
+  vars:
+    - name: GIT_USER
+      value: mattermod
+    - name: GIT_EMAIL
+      value: mattermod@mattermost.com
+  provides:
+    - commands/release/cut-release-branch.yaml
+    

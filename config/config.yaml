@@ -6,23 +6,28 @@ commands:
   - commands/gitlab/gitlab.yaml
   - commands/docker/docker.yaml
   - commands/fun/fun.yaml
+  - commands/k8s/k8s.yaml
+  - commands/release/release.yaml
 scheduler:
   - name: "Check Gitlab Version"
     provider: "gitlab"
     command: "version"
+    channel: "ops-tool-notifications"
     args:
       - "check"
     cron: "0 * * * *"
     hook: "HOOK"
   - name: "Joke"
+    channel: "fun"
     provider: "fun"
     command: "joke"
     cron: "*/5 * * * *"
-    hook: "HOOK"
+    hook: "https://ops-tool.cloud.mattermost.com/hooks/83d13meogjbrtxkydt1mfijd9w"
   - name: "Fortune"
+    channel: "fun"
     provider: "fun"
     command: "fortune"
-    cron: "*/15 * * *"
-    hook: "HOOK"    
-
+    cron: "*/6 * * *"
+    hook: "https://ops-tool.cloud.mattermost.com/hooks/83d13meogjbrtxkydt1mfijd9w"
+    
 ...

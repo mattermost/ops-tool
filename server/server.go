@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/ops-tool/version"
@@ -69,7 +71,7 @@ func providerHelpHookHandler(slashCommand *MMSlashCommand, providerName string) 
 	})
 	msg := "| Command | Slash Command | Description |\n| :-- | :-- | :-- |"
 	for _, c := range providerCommand.ProvidedCommands {
-		if providerCommand.CanTrigger(slashCommand.Username) {
+		if c.CanTrigger(slashCommand.Username) {
 			msg += fmt.Sprintf("\n| __%s__ | `%s %s %s %s` | *%s* |", c.Name, slashCommand.Command, providerCommand.Command, c.Command, c.SubCommand, c.Description)
 		}
 	}
@@ -105,7 +107,19 @@ func providerCommandHookHandler(slashCommand *MMSlashCommand, providerName strin
 	if opsCommand.SubCommand != "" {
 		args = args[1:]
 	}
-	output, err := opsCommand.Execute(slashCommand, args)
+	if !opsCommand.CanTrigger(slashCommand.Username) {
+		return nil, fmt.Errorf("you are not allowed to execute %s %s", providerName, commandName)
+	}
+	if opsCommand.Dialog != nil {
+		sendDialogCallback(opsCommand, slashCommand)
+	} else {
+		return executeCommand(opsCommand, slashCommand, args, map[string]string{})
+	}
+	return nil, nil
+}
+
+func executeCommand(opsCommand *OpsCommand, slashCommand *MMSlashCommand, args []string, envVars map[string]string) (*HookResponse, error) {
+	output, err := opsCommand.Execute(slashCommand, args, envVars)
 	if err != nil {
 		return nil, err
 	}
@@ -124,13 +138,49 @@ func providerCommandHookHandler(slashCommand *MMSlashCommand, providerName strin
 			return nil, err
 		}
 		return &HookResponse{
-			Title:        fmt.Sprintf("%s - %s %s", opsCommand.Name, slashCommand.Command, slashCommand.Text),
+			Title:        opsCommand.Name,
 			Color:        msgColor,
 			ResponseType: opsCommand.Response.Type,
 			Body:         buf.String(),
 		}, nil
 	}
 	return nil, nil
+}
+
+func sendDialogCallback(opsCommand *OpsCommand, slashCommand *MMSlashCommand) {
+	callbackID := uuid.NewString()
+	elements := make([]model.DialogElement, 0)
+	for _, opsElem := range opsCommand.Dialog.Elements {
+		elements = append(elements, model.DialogElement{
+			Name:        opsElem.Name,
+			DisplayName: opsElem.Title,
+			Type:        opsElem.Type,
+			SubType:     opsElem.SubType,
+			Default:     opsElem.Default,
+			Optional:    opsElem.Optional,
+			HelpText:    opsElem.HelpText,
+		})
+	}
+	request := &model.OpenDialogRequest{
+		TriggerId: slashCommand.TriggerID,
+		URL:       opsCommand.Dialog.CallbackURL,
+
+		Dialog: model.Dialog{
+			CallbackId:       callbackID,
+			Title:            opsCommand.Dialog.Title,
+			IntroductionText: opsCommand.Dialog.Text,
+			Elements:         elements,
+			NotifyOnCancel:   true, // We need to remove dialog session from map to save memory.
+		},
+	}
+	SendDialogRequest(opsCommand.Dialog.URL, request)
+	DialogSessions[callbackID] = &DialogSession{
+		CallbackID:   callbackID,
+		MMHookURL:    opsCommand.Dialog.MMHookURL,
+		SlashCommand: slashCommand,
+		OpsCommand:   opsCommand,
+	}
+	LogInfo("Dialog session is created for trigger %s with id %s", slashCommand.TriggerID, callbackID)
 }
 
 func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -156,11 +206,47 @@ func hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		response, err = providerCommandHookHandler(slashCommand, parsedCommand[0], parsedCommand[1], parsedCommand[2:])
 	}
 
-	if err == nil {
-		WriteEnrichedResponse(w, response.Title, response.Body, response.Color, response.ResponseType)
-	} else {
+	if err != nil {
 		LogError("Error while processing command %v", err)
 		WriteErrorResponse(w, NewError("Command execution failed!", err))
+	} else if response != nil {
+		WriteEnrichedResponse(w, response.Title, response.Body, response.Color, response.ResponseType)
+	}
+}
+
+func dialogHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	dialogSubmission, err := ParseDialogSubmission(r)
+	if err != nil {
+		WriteErrorResponse(w, NewError("Unable to parse dialog submission", err))
+		return
+	}
+	LogInfo("Received valid dialog submission for session %s, canceled: %t", dialogSubmission.CallbackID, dialogSubmission.Canceled)
+	dialogSession, found := DialogSessions[dialogSubmission.CallbackID]
+	if !found {
+		LogInfo("Dialog Session %s not found!", dialogSession.CallbackID)
+		WriteResponse(w, "Session not found! Trigger slash command again!", model.CommandResponseTypeEphemeral)
+		return
+	}
+	LogInfo("Found session executing command %s", dialogSession.OpsCommand.Name)
+	delete(DialogSessions, dialogSession.CallbackID)
+	LogInfo("Session %s is terminated. %d session is active.", dialogSession.CallbackID, len(DialogSessions))
+	if dialogSubmission.Canceled {
+		return
+	}
+
+	response, err := executeCommand(dialogSession.OpsCommand, dialogSession.SlashCommand, []string{}, dialogSubmission.Submission)
+	if err != nil {
+		LogError("Error while processing command %v", err)
+		return
+	} else if response != nil {
+		WriteEnrichedResponse(w, response.Title, response.Body, response.Color, response.ResponseType)
+	}
+	if dialogSession.MMHookURL != "" {
+		channel := dialogSession.SlashCommand.ChannelName
+		if response.ResponseType == model.CommandResponseTypeEphemeral {
+			channel = fmt.Sprintf("@%s", dialogSession.SlashCommand.Username)
+		}
+		SendViaIncomingHook(dialogSession.MMHookURL, channel, response.Title, response.Body, response.Color)
 	}
 }
 
@@ -180,7 +266,7 @@ func scheduledJobHandler(scheduledCommand *ScheduledCommand, job gocron.Job) {
 	if opsCommand == nil {
 		return
 	}
-	output, err := opsCommand.Execute(&MMSlashCommand{}, scheduledCommand.Args)
+	output, err := opsCommand.Execute(&MMSlashCommand{}, scheduledCommand.Args, map[string]string{})
 	if err != nil {
 		LogError("Error occurred while executing command! %v", err)
 	} else if opsCommand.Response.Generate {
@@ -197,10 +283,12 @@ func scheduledJobHandler(scheduledCommand *ScheduledCommand, job gocron.Job) {
 		if err != nil {
 			LogError("Error occurred while rendering response! %v", err)
 		} else {
-			SendViaIncomingHook(scheduledCommand.Hook, opsCommand.Name, buf.String(), msgColor)
+			SendViaIncomingHook(scheduledCommand.Hook, scheduledCommand.Channel, opsCommand.Name, buf.String(), msgColor)
 		}
 	}
 }
+
+var server *http.Server
 
 func Start() {
 	LoadConfig("config.yaml")
@@ -219,9 +307,23 @@ func Start() {
 	router.GET("/", indexHandler)
 	router.GET("/healthz", healthHandler)
 	router.POST("/hook", hookHandler)
+	router.POST("/dialog", dialogHandler)
 
 	LogInfo("Running OpsTool on port " + Config.Listen)
-	if err := http.ListenAndServe(Config.Listen, router); err != nil {
-		LogError(err.Error())
+	server = &http.Server{Addr: Config.Listen, Handler: router}
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			LogError(err.Error())
+		}
+	}()
+}
+
+func Stop() {
+	if server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			panic(err) // failure/timeout shutting down the server gracefully
+		}
 	}
 }

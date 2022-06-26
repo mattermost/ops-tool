@@ -1,0 +1,17 @@
+on: [push]
+name: Checks
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Code"
+        uses: "actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b" #v3.0.2
+      - name: "Execute Tests"
+        run: make test
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Code"
+        uses: "actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b" #v3.0.2
+      - name: "Lint"
+        run: make lint
