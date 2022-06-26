@@ -1,0 +1,25 @@
+---
+
+- command: "logs"
+  subcommand: "matterbuild"
+  name: "Matterbuild Logs"
+  description: "Retrieve last 500 lines of matterbuild"
+  vars:
+    - name: K8S_CLUSTER
+      value: teleport-main-core-general-company
+    - name: K8S_NAMESPACE
+      value: matterbuild
+    - name: DEPLOYMENT_NAME
+      value: matterbuild
+  exec: 
+    - scripts/k8s/logs.sh
+  response:
+    type: "ephemeral"
+    colors:
+      - color: "#0000ff"
+    template: |
+      ```
+      {{.Data}}
+      ```
+
+...

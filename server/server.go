@@ -314,7 +314,6 @@ func Start() {
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
 			LogError(err.Error())
-			panic(err)
 		}
 	}()
 }

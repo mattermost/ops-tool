@@ -5,6 +5,7 @@
   description: "Make your day!"
   provides:
     - commands/fun/joke.yaml
+    - commands/fun/figlet.yaml
     - commands/fun/fortune.yaml
 
 ...

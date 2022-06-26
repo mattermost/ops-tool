@@ -1,0 +1,14 @@
+---
+
+- command: "figlet"
+  name: "Ascii Art"
+  description: "Generate art. Usage `/ops figlet [message]`"
+  exec:
+    - scripts/fun/figlet.sh
+  response:
+    type: "ephemeral"
+    template: |
+      ```
+      {{ .Data }}
+      ```
+...
