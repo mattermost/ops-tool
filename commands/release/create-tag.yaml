@@ -1,0 +1,58 @@
+---
+
+- command: "ops-tool"
+  subcommand: "tag"
+  name: "Create OpsTool Tag"
+  description: "Create a tag in the OpsTool Repository"
+  vars:
+    - name: REPO_URL
+      value: git@github.com:mattermost/ops-tool.git
+  users:
+    - mkara
+    - akis
+    - julien
+  dialog:
+    title: Create OpsTool Tag
+    url: MM_URL/api/v4/actions/dialogs/open
+    callbackUrl: TOOL_URL/dialog
+    hook: MM_INCOMING_HOOK_URL
+    elements:
+      - name: BRANCH_NAME
+        display_name: Branch Name
+        type: text
+        subtype: text
+        optional: false
+        default: main
+        help_text: Determines the branch name to create the tag from.
+      - name: RELEASE_TAG 
+        display_name: Tag Name
+        type: text
+        subtype: text
+        optional: false
+        placeholder: v1.0.0
+        help_text: Determines the tag name will be created.
+      - name: DRY_RUN
+        display_name: Dry-Run
+        type: text
+        subtype: text
+        default: yes
+        optional: false
+        help_text: Create tag in dry-run mode. Type `no` to create tag.
+  exec: 
+    - scripts/release/create-tag.sh
+  response:
+    type: "ephemeral"
+    colors:
+    - color: "#0000ff"
+      status: "tag"
+    - color: "#ff0000"
+    template: |
+      {{ if eq .Status "tag" }}
+        {{ .Data.RELEASE_TAG }} is successfully created from {{ .Data.BRANCH_NAME }}!
+      {{- else -}}
+        Error occured while creating {{ .Data.RELEASE_TAG }} from {{ .Data.BRANCH_NAME }}!
+        {{ .Data.error }}
+      {{ end }}
+        
+      
+...

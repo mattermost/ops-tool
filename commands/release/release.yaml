@@ -8,4 +8,5 @@
       value: mattermod@mattermost.com
   provides:
     - commands/release/cut-release-branch.yaml
+    - commands/release/create-tag.yaml
     
