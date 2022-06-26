@@ -22,12 +22,12 @@ scheduler:
     provider: "fun"
     command: "joke"
     cron: "*/5 * * * *"
-    hook: "https://ops-tool.cloud.mattermost.com/hooks/83d13meogjbrtxkydt1mfijd9w"
+    hook: "TOKEN"
   - name: "Fortune"
     channel: "fun"
     provider: "fun"
     command: "fortune"
     cron: "*/6 * * *"
-    hook: "https://ops-tool.cloud.mattermost.com/hooks/83d13meogjbrtxkydt1mfijd9w"
+    hook: "TOKEN"
     
 ...
