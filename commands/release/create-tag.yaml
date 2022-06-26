@@ -7,6 +7,8 @@
   vars:
     - name: REPO_URL
       value: git@github.com:mattermost/ops-tool.git
+    - name: MAIN_BRANCH
+      value: main
   users:
     - mkara
     - akis
@@ -48,9 +50,9 @@
     - color: "#ff0000"
     template: |
       {{ if eq .Status "tag" }}
-        {{ .Data.RELEASE_TAG }} is successfully created from {{ .Data.BRANCH_NAME }}!
+        {{ if ne .Data.DRY_RUN "no" }}[DRY_RUN]{{ end }}{{ .Data.RELEASE_TAG }} is successfully created from {{ .Data.BRANCH_NAME }}!
       {{- else -}}
-        Error occured while creating {{ .Data.RELEASE_TAG }} from {{ .Data.BRANCH_NAME }}!
+        {{ if ne .Data.DRY_RUN "no" }}[DRY_RUN]{{ end }}Error occured while creating {{ .Data.RELEASE_TAG }} from {{ .Data.BRANCH_NAME }}!
         {{ .Data.error }}
       {{ end }}
         

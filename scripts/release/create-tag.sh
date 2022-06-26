@@ -4,7 +4,7 @@ STATUS="tag"
 BASE_NAME=$(basename "$REPO_URL" ".git")
 
 function cloneRepo(){
-    git clone "$REPO_URL"
+    git clone -b ${BRANCH_NAME} "$REPO_URL"
     cd "${BASE_NAME}"
 }
 
@@ -24,16 +24,19 @@ if [ "$(git tag -l "${RELEASE_TAG}")" ]; then
     exit 0
 fi
 
-git checkout ${BRANCH_NAME}
-retVal=$?
-if [ $retVal -ne 0 ]
+if [ "$BRANCH_NAME" != "$MAIN_BRANCH" ]
 then
-    jq  --null-input \
-        --arg tag "$RELEASE_TAG" \
-        --arg branch "$BRANCH_NAME" \
-        '{"status": "missing_branch",  "data": { "error":"Can not find branch!","BRANCH_NAME": $branch,"RELEASE_TAG": $tag }}'
-    deleteRepo
-    exit 0
+    git checkout ${BRANCH_NAME}
+    retVal=$?
+    if [ $retVal -ne 0 ]
+    then
+        jq  --null-input \
+            --arg tag "$RELEASE_TAG" \
+            --arg branch "$BRANCH_NAME" \
+            '{"status": "missing_branch",  "data": { "error":"Can not find branch!","BRANCH_NAME": $branch,"RELEASE_TAG": $tag }}'
+        deleteRepo
+        exit 0
+    fi
 fi
 
 git tag -l "${RELEASE_TAG}"
