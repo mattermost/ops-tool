@@ -1,0 +1,19 @@
+---
+
+listen: "0.0.0.0:8080"
+token: "TOKEN"           # Mattermost slash command token
+commands:
+  - commands/gitlab/gitlab.yaml                
+  - commands/docker/docker.yaml
+  - commands/fun/fun.yaml
+  - commands/k8s/k8s.yaml
+  - commands/release/release.yaml
+scheduler:
+  - name: "Joke"
+    channel: "fun"
+    provider: "fun"
+    command: "joke"
+    cron: "*/5 * * * *"
+    hook: "TOKEN"
+    
+...
