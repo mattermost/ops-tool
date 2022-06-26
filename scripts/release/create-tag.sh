@@ -34,7 +34,7 @@ then
         jq  --null-input \
             --arg tag "$RELEASE_TAG" \
             --arg branch "$BRANCH_NAME" \
-            --arg dry "$DRY_RUN"
+            --arg dry "$DRY_RUN" \
             '{"status": "missing_branch",  "data": { "error":"Can not find branch!","BRANCH_NAME": $branch,"RELEASE_TAG": $tag,"DRY_RUN": $dry }}'
         deleteRepo
         exit 0
@@ -57,7 +57,7 @@ deleteRepo
 jq  --null-input \
         --arg tag "$RELEASE_TAG" \
         --arg branch "$BRANCH_NAME" \
-        --arg dry "$DRY_RUN"
+        --arg dry "$DRY_RUN" \
         '{"status": "tag",  "data": { "BRANCH_NAME": $branch,"RELEASE_TAG": $tag,"DRY_RUN": $dry }}'
     
 
