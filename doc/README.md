@@ -87,4 +87,4 @@ OpsTool has following configuration files and folders.
 * [Main Configuration](./main_configuration.md)
 * [Provider Configuration](./provider_configuration.md)
 * [Command Configuration](./command_configuration.md)
-* [Handler Script](./handler_script.md)
+* [Handler Scripts](./handler_script.md)
