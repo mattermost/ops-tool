@@ -41,12 +41,12 @@ fi
 
 git tag -l "${RELEASE_TAG}"
 
-if [ "${DRY_RUN}" == "false" ]
+if [ "${DRY_RUN}" == "no" ]
 then
-    git push --dry_run origin ${RELEASE_TAG}
+    git push origin ${RELEASE_TAG}
     retVal=$?
 else
-    git push origin ${RELEASE_TAG}
+    git push --dry_run origin ${RELEASE_TAG}
     retVal=$?
 fi
 
