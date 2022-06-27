@@ -37,6 +37,11 @@ Sample command output: `/ops gitlab version check`
 
 ![GitLab Version Check](doc/assets/readme_gitlab_version_check.png)
 
+## Architecture Example
+
+In the following example, several Mattermost clients, are invoking `/ops` commands, to interact with remote APIs accessed by the ops-tool. 
+
+![Ops Tool Architecture Example](doc/assets/diagram.png)
 
 ## Get Involved
 
