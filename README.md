@@ -85,8 +85,7 @@ See documentation for detailed configuration and command reference.
 To execute locally:
 
 ```shell
-go run ./...
-
+make go-run
 ```
 
 ### Testing
