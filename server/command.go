@@ -91,12 +91,8 @@ func (opsCmd *OpsCommand) Execute(mmCommand *MMSlashCommand, args []string, envV
 	for _, step := range opsCmd.Exec {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		script := step
-		for i := range args {
-			script = fmt.Sprintf("%s %s", script, args[i])
-		}
-		LogInfo("Will execute %s", script)
-		cmd := exec.Command("/bin/bash", "-c", script)
+		LogInfo("Will execute %s", step)
+		cmd := exec.Command(step, args...)
 		cmd.Env = append(cmd.Env, os.Environ()...)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("CHANNEL_NAME=%s", mmCommand.ChannelName))
 		cmd.Env = append(cmd.Env, fmt.Sprintf("TEAM_NAME=%s", mmCommand.TeamName))
