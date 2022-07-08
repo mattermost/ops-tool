@@ -29,15 +29,6 @@
         subtype: number
         optional: false
         default: 1
-        options: 
-          - text: "Focalboard"
-            value: "194"
-          - text: "Mattermost Server"
-            value: "163"
-          - text: "OpsTool"
-            value: "341"
-          - text: "mattermost-cloud"
-            value: "287"
   exec: 
     - scripts/gitlab/gitlab_pipelines.sh
   response:
