@@ -58,16 +58,22 @@ type OpsCommandDialog struct {
 }
 
 type OpsCommandDialogElement struct {
-	DisplayName string `yaml:"display_name"`
-	Name        string `yaml:"name"`
-	Type        string `yaml:"type"`
-	SubType     string `yaml:"subtype"`
-	Default     string `yaml:"default"`
-	Placeholder string `yaml:"placeholder"`
-	HelpText    string `yaml:"help_text"`
-	Optional    bool   `yaml:"optional"`
-	MinLength   int    `yaml:"min_length"`
-	MaxLength   int    `yaml:"max_length"`
+	DisplayName string                    `yaml:"display_name"`
+	Name        string                    `yaml:"name"`
+	Type        string                    `yaml:"type"`
+	SubType     string                    `yaml:"subtype"`
+	Default     string                    `yaml:"default"`
+	Placeholder string                    `yaml:"placeholder"`
+	HelpText    string                    `yaml:"help_text"`
+	Optional    bool                      `yaml:"optional"`
+	MinLength   int                       `yaml:"min_length"`
+	MaxLength   int                       `yaml:"max_length"`
+	Options     []*OpsCommandDialogOption `yaml:"options"`
+}
+
+type OpsCommandDialogOption struct {
+	Text  string `yaml:"text"`
+	Value string `yaml:"value"`
 }
 
 var Providers map[string]*OpsCommand = make(map[string]*OpsCommand)

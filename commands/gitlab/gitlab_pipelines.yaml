@@ -1,12 +1,43 @@
 ---
 
 - command: "pipelines"
-  subcommand: "mattermost-server"
-  name: "mattermost-server Pipelines"
-  description: "Get paged pipelines of mattermost-server ascending. Please provide page number as argument to get old executions.`/ops gitlab pipelines mattermost-server 2`"
-  vars:
-    - name: REPO_ID
-      value: 163
+  name: "Gitlab Pipelines"
+  description: "Get Pipelines from Gitlab"
+  dialog:
+    title: Select Project
+    url: https://ops-tool.cloud.mattermost.com/api/v4/actions/dialogs/open
+    callbackUrl: https://2db1-185-148-86-26.eu.ngrok.io/dialog
+    hook: https://ops-tool.cloud.mattermost.com/hooks/yx4z835mnj8rudp6y131q3kpny
+    elements:
+      - name: REPO_ID
+        display_name: Repository
+        type: select
+        optional: false
+        help_text: Select repostiory to view pipelines
+        options: 
+          - text: "Focalboard"
+            value: "194"
+          - text: "Mattermost Server"
+            value: "163"
+          - text: "OpsTool"
+            value: "341"
+          - text: "mattermost-cloud"
+            value: "287"
+      - name: PAGE_NUMBER
+        display_name: Page
+        type: text
+        subtype: number
+        optional: false
+        default: 1
+        options: 
+          - text: "Focalboard"
+            value: "194"
+          - text: "Mattermost Server"
+            value: "163"
+          - text: "OpsTool"
+            value: "341"
+          - text: "mattermost-cloud"
+            value: "287"
   exec: 
     - scripts/gitlab/gitlab_pipelines.sh
   response:
