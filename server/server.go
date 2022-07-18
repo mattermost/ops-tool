@@ -150,7 +150,15 @@ func executeCommand(opsCommand *OpsCommand, slashCommand *MMSlashCommand, args [
 func sendDialogCallback(opsCommand *OpsCommand, slashCommand *MMSlashCommand) {
 	callbackID := uuid.NewString()
 	elements := make([]model.DialogElement, 0)
+
 	for _, opsElem := range opsCommand.Dialog.Elements {
+		options := make([]*model.PostActionOptions, 0)
+		for _, option := range opsElem.Options {
+			options = append(options, &model.PostActionOptions{
+				Text:  option.Text,
+				Value: option.Value,
+			})
+		}
 		elements = append(elements, model.DialogElement{
 			Name:        opsElem.Name,
 			DisplayName: opsElem.DisplayName,
@@ -162,6 +170,7 @@ func sendDialogCallback(opsCommand *OpsCommand, slashCommand *MMSlashCommand) {
 			Placeholder: opsElem.Placeholder,
 			MinLength:   opsElem.MinLength,
 			MaxLength:   opsElem.MaxLength,
+			Options:     options,
 		})
 	}
 
