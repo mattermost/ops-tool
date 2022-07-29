@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mattermost/ops-tool/config"
 	"github.com/mattermost/ops-tool/plugin"
@@ -74,8 +76,15 @@ func (s *Server) Start(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to load commands")
 	}
-
 	s.commands = commands
+
+	log.Println("Loading scheduled commands...")
+	scheduler := gocron.NewScheduler(time.UTC)
+	for _, scheduledCommand := range cfg.ScheduledCommands {
+		log.Println("Scheduling command '" + scheduledCommand.Name + "' for " + scheduledCommand.Cron)
+		scheduler.Cron(scheduledCommand.Cron).DoWithJobDetails(s.scheduledCommandHandler, scheduledCommand)
+	}
+	scheduler.StartAsync()
 
 	s.DialogStore = store.NewInMemoryDialogStore()
 
@@ -96,6 +105,15 @@ func (s *Server) Start(ctx context.Context) error {
 	log.Println("starting http server")
 
 	return s.server.ListenAndServe()
+}
+
+func (s *Server) findCommand(rootCommand string) *slashcommand.SlashCommand {
+	for _, cmd := range s.commands {
+		if strings.EqualFold(rootCommand, cmd.Command) {
+			return &cmd
+		}
+	}
+	return nil
 }
 
 func (s *Server) Stop() {

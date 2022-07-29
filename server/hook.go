@@ -11,7 +11,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	mmmodel "github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/ops-tool/model"
-	"github.com/mattn/go-shellwords"
 )
 
 func (s *Server) hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -21,84 +20,62 @@ func (s *Server) hookHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
 	log.Printf("slashCommand received: %#v", *slashCommand)
 
-	res, err := shellwords.Parse(strings.TrimPrefix(slashCommand.Command, "/") + " " + slashCommand.Text)
+	rootCommand, cmdText, args, err := ParseCommand(slashCommand.Command + " " + slashCommand.Text)
 	if err != nil {
-		fmt.Println("parse slash command" + err.Error())
+		log.Println("parse slash command" + err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	cmdText := ""
-	args := map[string]string{}
-	parsingArgs := false
-	for _, x := range res[1:] {
-		if !parsingArgs {
-			if strings.HasPrefix(x, "--") {
-				parsingArgs = true
-			} else {
-				cmdText += x + " "
-			}
-		}
-
-		if parsingArgs {
-			if !strings.HasPrefix(x, "--") {
-				// ignore string that does not start with --
-				continue
-			}
-
-			parts := strings.Split(x, "=")
-			name := strings.TrimSpace(strings.TrimPrefix(parts[0], "--"))
-			if len(parts) == 1 {
-				args[name] = "true"
-			} else {
-				args[name] = strings.TrimSpace(parts[1])
-			}
-		}
-	}
-	cmdText = strings.TrimSpace(cmdText)
-
 	log.Println("Command: " + cmdText)
 	log.Printf("Args: %#v\n", args)
-	for _, cmd := range s.commands {
-		if strings.EqualFold(res[0], cmd.Command) {
-			response, err := cmd.Execute(slashCommand, cmdText, args)
-			if err != nil {
-				log.Println("execute command: " + err.Error())
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
 
-			switch response.Type {
-			case model.CommandResponseTypeInChannel, model.CommandResponseTypeEphemeral:
-				msg := response.Message
-				WriteEnrichedResponse(w, msg.Title, msg.Body, msg.Color, msg.ResponseType)
-				return
-			case model.CommandResponseTypeDialog:
-				// create a dialog
-				request, err := s.DialogStore.Create(
-					slashCommand,
-					res[0],
-					cmdText,
-					args,
-					response.Dialog,
-				)
-				request.URL = s.Config.BaseURL + "/dialog"
-				log.Println("dialog response to: " + request.URL)
-				if err != nil {
-					log.Println("create dialog" + err.Error())
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
-				s.SendDialogRequest(cmd.DialogURL, request)
-			default:
-				// err
-			}
-			break
-		}
+	cmd := s.findCommand(rootCommand)
+	if cmd == nil {
+		// TODO: command not found?
+		return
 	}
+
+	// make sure the token is valid
+	if !strings.EqualFold(cmd.Token, slashCommand.Token) {
+		log.Println("invalid token")
+		WriteErrorResponse(w, NewError("Invalid command token! Please check slash command token", err))
+		return
+	}
+
+	response, err := cmd.Execute(slashCommand, cmdText, args)
+	if err != nil {
+		log.Println("execute command: " + err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	switch response.Type {
+	case model.CommandResponseTypeInChannel, model.CommandResponseTypeEphemeral:
+		msg := response.Message
+		WriteEnrichedResponse(w, msg.Title, msg.Body, msg.Color, msg.ResponseType)
+		return
+	case model.CommandResponseTypeDialog:
+		request, err := s.DialogStore.Create(
+			slashCommand,
+			rootCommand,
+			cmdText,
+			args,
+			response.Dialog,
+		)
+		request.URL = s.Config.BaseURL + "/dialog"
+		log.Println("dialog response to: " + request.URL)
+		if err != nil {
+			log.Println("create dialog" + err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		s.SendDialogRequest(cmd.DialogURL, request)
+		return
+	}
+	// TODO: error for unknown response type?
 }
 
 func (s *Server) SendDialogRequest(url string, request *mmmodel.OpenDialogRequest) {

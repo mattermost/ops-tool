@@ -36,21 +36,20 @@ type PluginConfig struct {
 }
 
 type CommandConfig struct {
-	Command           string   `yaml:"command"`
-	Token             string   `yaml:"token"`
-	DialogURL         string   `yaml:"dialog_url"`
-	DialogResponseURL string   `yaml:"dialog_response_url"`
-	Plugins           []string `yaml:"plugins"`
+	Command              string   `yaml:"command"`
+	Token                string   `yaml:"token"`
+	DialogURL            string   `yaml:"dialog_url"`
+	DialogResponseURL    string   `yaml:"dialog_response_url"`
+	SchedulerResponseURL string   `yaml:"scheduler_response_url"`
+	Plugins              []string `yaml:"plugins"`
 }
 
 type ScheduledCommandConfig struct {
-	Name     string   `yaml:"name"`
-	Channel  string   `yaml:"channel"`
-	Provider string   `yaml:"provider"`
-	Command  string   `yaml:"command"`
-	Args     []string `yaml:"args"`
-	Cron     string   `yaml:"cron"`
-	Hook     string   `yaml:"hook"`
+	Name        string `yaml:"name"`
+	Cron        string `yaml:"cron"`
+	Command     string `yaml:"command"`
+	Channel     string `yaml:"channel"`
+	ResponseURL string `yaml:"response_url"`
 }
 
 func Load(path string) (*Config, error) {

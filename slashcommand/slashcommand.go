@@ -11,11 +11,18 @@ import (
 )
 
 type SlashCommand struct {
-	Command           string
-	Token             string
-	DialogURL         string
+	// Command is the root command that will be used to dispatch the received slash command
+	Command string
+	// Token is the token you get from Mattermost when creating a slash command
+	Token string
+	// DialogURL is the URL that will be used to open the dialog
+	DialogURL string
+	// DialogResponseURL is the URL that will be used to send the response to the dialog
 	DialogResponseURL string
-	Commands          []model.Command
+	// ScheduledResponseURL is the URL that will be used to send the response from the scheduled commands
+	SchedulerResponseURL string
+
+	Commands []model.Command
 }
 
 func (s *SlashCommand) Execute(mmCommand *model.MMSlashCommand, cmd string, args map[string]string) (*model.CommandResponse, error) {
@@ -45,11 +52,12 @@ func Load(plugins []plugin.Plugin, cfg []config.CommandConfig) ([]SlashCommand, 
 
 	for i, commandCfg := range cfg {
 		sCmd := SlashCommand{
-			Command:           commandCfg.Command,
-			Token:             commandCfg.Token,
-			DialogURL:         commandCfg.DialogURL,
-			DialogResponseURL: commandCfg.DialogResponseURL,
-			Commands:          []model.Command{},
+			Command:              commandCfg.Command,
+			Token:                commandCfg.Token,
+			DialogURL:            commandCfg.DialogURL,
+			DialogResponseURL:    commandCfg.DialogResponseURL,
+			SchedulerResponseURL: commandCfg.SchedulerResponseURL,
+			Commands:             []model.Command{},
 		}
 
 		for _, cmdPlugins := range commandCfg.Plugins {
