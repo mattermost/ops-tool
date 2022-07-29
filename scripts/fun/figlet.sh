@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ART=$(figlet -f banner "$@")
+ART=$(figlet -f banner "$ARG_TEXT")
 
 jq --null-input \
    --arg art "$ART" \

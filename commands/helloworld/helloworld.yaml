@@ -1,0 +1,25 @@
+- command: "helloworld"
+  name: "Hello Who?"
+  description: "Print a hello world, but getting the name from a modal"
+  vars:
+  - name: HELLO
+    value: "hello"
+  dialog:
+    title: Hello world
+    introduction_text: Say hello to whoever is passed
+    elements:
+      - name: WORLD 
+        display_name: World
+        type: text
+        subtype: text
+        optional: false
+        default: world
+        help_text: How are we say hello to
+  exec: 
+    - scripts/helloworld/helloworld.sh
+  response:
+    type: "ephemeral"
+    colors:
+    - color: "#ff0000"
+...
+    

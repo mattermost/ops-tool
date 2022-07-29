@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,9 +18,23 @@ func main() {
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
 
-	server.Start()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	<-signalChanel
+	srv := server.New()
 
-	server.Stop()
+	go func() {
+		select {
+		case <-signalChanel:
+			fmt.Println("Received an interrupt, stopping...")
+		case <-ctx.Done():
+			fmt.Println("Context done, stopping...")
+		}
+		srv.Stop()
+	}()
+
+	err := srv.Start(ctx)
+	if err != nil && err != http.ErrServerClosed {
+		panic(err)
+	}
 }

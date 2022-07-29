@@ -1,13 +1,28 @@
 ---
 
 listen: "0.0.0.0:8080"
-token: "TOKEN"
-commands:
-  - commands/gitlab/gitlab.yaml
-  - commands/docker/docker.yaml
-  - commands/fun/fun.yaml
-  - commands/k8s/k8s.yaml
-  - commands/release/release.yaml
+base_url: "https://e063-72-201-184-106.ngrok.io"
+plugins:
+  - name: bash
+    file: plugins/bash.so
+    config:
+      files:
+        - commands/gitlab/gitlab.yaml
+        - commands/docker/docker.yaml
+        - commands/fun/fun.yaml
+        - commands/k8s/k8s.yaml
+        - commands/release/release.yaml
+  - name: bash2
+    file: plugins/bash.so
+    config:
+      files:
+        - commands/helloworld/helloworld.yaml
+commands: 
+  - command: jops
+    plugins: [bash, bash2]
+    token: "1i4g4sgymjboufb9fmuf96whtw"
+    dialog_url: https://ops-tool.cloud.mattermost.com/api/v4/actions/dialogs/open
+    dialog_response_url: https://ops-tool.cloud.mattermost.com/hooks/6syd64mrqf8h8ydqftot3qe8ew
 scheduler:
   - name: "Check Gitlab Version"
     provider: "gitlab"
