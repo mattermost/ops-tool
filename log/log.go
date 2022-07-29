@@ -7,10 +7,10 @@ import (
 	"go.uber.org/zap"
 )
 
-type correlationIdType int
+type correlationIDType int
 
 const (
-	requestIdKey correlationIdType = iota
+	requestIDKey correlationIDType = iota
 	pluginKey
 	slashCommandKey
 )
@@ -30,8 +30,8 @@ func init() {
 	logger = &Logger{l.Sugar()}
 }
 
-func WithRqId(ctx context.Context, rqId string) context.Context {
-	return context.WithValue(ctx, requestIdKey, rqId)
+func WithReqID(ctx context.Context, rqID string) context.Context {
+	return context.WithValue(ctx, requestIDKey, rqID)
 }
 
 func WithPlugin(ctx context.Context, plugin string) context.Context {
@@ -50,8 +50,8 @@ func Default() *Logger {
 func FromContext(ctx context.Context) *Logger {
 	newLogger := logger.SugaredLogger
 	if ctx != nil {
-		if ctxRqId, ok := ctx.Value(requestIdKey).(string); ok {
-			newLogger = newLogger.With(zap.String("req_id", ctxRqId))
+		if ctxRqID, ok := ctx.Value(requestIDKey).(string); ok {
+			newLogger = newLogger.With(zap.String("req_id", ctxRqID))
 		}
 		if ctxPlugin, ok := ctx.Value(pluginKey).(string); ok {
 			newLogger = newLogger.With(zap.String("plugin", ctxPlugin))

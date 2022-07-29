@@ -111,12 +111,10 @@ func (s *Server) Start(ctx context.Context) error {
 	return s.server.ListenAndServe()
 }
 
-type ReqIdKey struct{}
-
 func enhancedHandler(logger *log.Logger, fn func(context.Context, http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		requestID := randStr(16)
-		ctx := log.WithRqId(r.Context(), requestID)
+		ctx := log.WithReqID(r.Context(), requestID)
 
 		fn(ctx, w, r, ps)
 	}
