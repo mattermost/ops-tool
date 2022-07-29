@@ -75,7 +75,7 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	log.Debug("Loading commands...")
-	commands, err := slashcommand.Load(plugins, cfg.CommandConfigurations)
+	commands, err := slashcommand.Load(ctx, plugins, cfg.CommandConfigurations)
 	if err != nil {
 		return errors.Wrap(err, "failed to load commands")
 	}

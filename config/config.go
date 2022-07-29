@@ -36,12 +36,12 @@ type PluginConfig struct {
 }
 
 type CommandConfig struct {
-	Command              string   `yaml:"command"`
-	Token                string   `yaml:"token"`
-	DialogURL            string   `yaml:"dialog_url"`
-	DialogResponseURL    string   `yaml:"dialog_response_url"`
-	SchedulerResponseURL string   `yaml:"scheduler_response_url"`
-	Plugins              []string `yaml:"plugins"`
+	Command              string          `yaml:"command"`
+	Token                string          `yaml:"token"`
+	DialogURL            string          `yaml:"dialog_url"`
+	DialogResponseURL    string          `yaml:"dialog_response_url"`
+	SchedulerResponseURL string          `yaml:"scheduler_response_url"`
+	Plugins              []CommandPlugin `yaml:"plugins"`
 }
 
 type ScheduledCommandConfig struct {
@@ -67,4 +67,42 @@ func Load(path string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+type CommandPlugin struct {
+	Name    string
+	Only    []string
+	Exclude []string
+}
+
+type plainCommandPlugin struct {
+	Name    string   `yaml:"name"`
+	Only    []string `yaml:"only"`
+	Exclude []string `yaml:"exclude"`
+}
+
+// UnmarshalYAML implements the Unmarshaler interface.
+// The CommandPlugin can either be a string corresponding to the name, or a CommandPlugin
+func (cp *CommandPlugin) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	name := ""
+	err := unmarshal(&name)
+	if err == nil {
+		*cp = CommandPlugin{Name: name}
+		return nil
+	}
+
+	plugin := plainCommandPlugin{}
+	err = unmarshal(&plugin)
+	if err != nil {
+		return err
+	}
+
+	cp.Name = plugin.Name
+	cp.Only = plugin.Only
+	cp.Exclude = plugin.Exclude
+
+	if len(cp.Only) > 0 && len(cp.Exclude) > 0 {
+		return errors.New("only and exclude cannot be both set")
+	}
+	return nil
 }

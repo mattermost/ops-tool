@@ -61,7 +61,7 @@ func enhanceContext(ctx context.Context, s *SlashCommand, command model.Command)
 	return ctx
 }
 
-func Load(plugins []plugin.Plugin, cfg []config.CommandConfig) ([]SlashCommand, error) {
+func Load(ctx context.Context, plugins []plugin.Plugin, cfg []config.CommandConfig) ([]SlashCommand, error) {
 	commands := make([]SlashCommand, len(cfg))
 
 	for i, commandCfg := range cfg {
@@ -73,12 +73,22 @@ func Load(plugins []plugin.Plugin, cfg []config.CommandConfig) ([]SlashCommand, 
 			SchedulerResponseURL: commandCfg.SchedulerResponseURL,
 			Commands:             []model.Command{},
 		}
+		ctx = log.WithSlashCommand(ctx, sCmd.Command)
 
 		for _, cmdPlugins := range commandCfg.Plugins {
 			for _, plugin := range plugins {
-				if plugin.Name == cmdPlugins {
+				if plugin.Name == cmdPlugins.Name {
+					ctx = log.WithPlugin(ctx, plugin.Name)
 					pluginCmds := plugin.RegisterSlashCommand()
 					for i := range pluginCmds {
+						if len(cmdPlugins.Only) > 0 && !contains(cmdPlugins.Only, pluginCmds[i].Command) {
+							log.FromContext(ctx).Debugf("Skipping command %s because it is not in the only list", pluginCmds[i].Command)
+							continue
+						} else if len(cmdPlugins.Exclude) > 0 && contains(cmdPlugins.Exclude, pluginCmds[i].Command) {
+							log.FromContext(ctx).Debugf("Skipping command %s because it is in the exclude list", pluginCmds[i].Command)
+							continue
+						}
+
 						pluginCmds[i].Plugin = plugin.Name
 						sCmd.Commands = append(sCmd.Commands, pluginCmds[i])
 					}
@@ -90,4 +100,13 @@ func Load(plugins []plugin.Plugin, cfg []config.CommandConfig) ([]SlashCommand, 
 	}
 
 	return commands, nil
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
