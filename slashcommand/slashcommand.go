@@ -1,6 +1,7 @@
 package slashcommand
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -25,6 +26,8 @@ type SlashCommand struct {
 	Commands []model.Command
 }
 
+var ErrCommandNotFound = errors.New("command not found")
+
 func (s *SlashCommand) Execute(mmCommand *model.MMSlashCommand, cmd string, args map[string]string) (*model.CommandResponse, error) {
 	for _, command := range s.Commands {
 		if strings.EqualFold(command.Command, cmd) {
@@ -33,7 +36,7 @@ func (s *SlashCommand) Execute(mmCommand *model.MMSlashCommand, cmd string, args
 		}
 	}
 
-	return nil, fmt.Errorf("command %s not found", cmd)
+	return nil, ErrCommandNotFound
 }
 
 func (s *SlashCommand) ExecuteDialog(submission *model.DialogSubmission, cmd string, args map[string]string) (*model.CommandResponse, error) {

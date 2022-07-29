@@ -11,6 +11,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	mmmodel "github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/ops-tool/model"
+	"github.com/mattermost/ops-tool/slashcommand"
 )
 
 func (s *Server) hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -34,7 +35,9 @@ func (s *Server) hookHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	cmd := s.findCommand(rootCommand)
 	if cmd == nil {
-		// TODO: command not found?
+		log.Println("Command not found, sending full help")
+		help := s.fullHelp()
+		WriteResponse(w, help, mmmodel.CommandResponseTypeEphemeral)
 		return
 	}
 
@@ -47,6 +50,14 @@ func (s *Server) hookHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	response, err := cmd.Execute(slashCommand, cmdText, args)
 	if err != nil {
+		if err == slashcommand.ErrCommandNotFound {
+			log.Println("Command not found, sending help")
+			help := "**Command not found. Available commands:**\n\n" + s.helpForCommand(*cmd)
+
+			WriteResponse(w, help, mmmodel.CommandResponseTypeEphemeral)
+			return
+		}
+
 		log.Println("execute command: " + err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return

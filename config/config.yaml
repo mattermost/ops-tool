@@ -12,9 +12,10 @@ plugins:
         - commands/fun/fun.yaml
         - commands/k8s/k8s.yaml
         - commands/release/release.yaml
+        - commands/helloworld/helloworld.yaml
 commands: 
   - command: jops
-    plugins: [bash, bash2]
+    plugins: [bash]
     token: "1i4g4sgymjboufb9fmuf96whtw"
     dialog_url: https://ops-tool.cloud.mattermost.com/api/v4/actions/dialogs/open
     dialog_response_url: https://ops-tool.cloud.mattermost.com/hooks/6syd64mrqf8h8ydqftot3qe8ew
