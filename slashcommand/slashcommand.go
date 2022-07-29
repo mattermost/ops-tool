@@ -1,12 +1,13 @@
 package slashcommand
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/mattermost/ops-tool/config"
+	"github.com/mattermost/ops-tool/log"
 	"github.com/mattermost/ops-tool/model"
 	"github.com/mattermost/ops-tool/plugin"
 )
@@ -28,26 +29,36 @@ type SlashCommand struct {
 
 var ErrCommandNotFound = errors.New("command not found")
 
-func (s *SlashCommand) Execute(mmCommand *model.MMSlashCommand, cmd string, args map[string]string) (*model.CommandResponse, error) {
+func (s *SlashCommand) Execute(ctx context.Context, mmCommand *model.MMSlashCommand, cmd string, args map[string]string) (*model.CommandResponse, error) {
 	for _, command := range s.Commands {
 		if strings.EqualFold(command.Command, cmd) {
-			log.Println("Executing command: " + command.Command)
-			return command.CommandHandler(mmCommand, args)
+			ctx = enhanceContext(ctx, s, command)
+
+			log.FromContext(ctx).Debugf("Executing command: %s", command.Command)
+			return command.CommandHandler(ctx, mmCommand, args)
 		}
 	}
 
 	return nil, ErrCommandNotFound
 }
 
-func (s *SlashCommand) ExecuteDialog(submission *model.DialogSubmission, cmd string, args map[string]string) (*model.CommandResponse, error) {
+func (s *SlashCommand) ExecuteDialog(ctx context.Context, submission *model.DialogSubmission, cmd string, args map[string]string) (*model.CommandResponse, error) {
 	for _, command := range s.Commands {
 		if strings.EqualFold(command.Command, cmd) {
-			log.Println("Executing command: " + command.Command)
-			return command.DialogHandler(submission, args)
+			ctx = enhanceContext(ctx, s, command)
+
+			log.FromContext(ctx).Debugf("Executing dialog command: %s", command.Command)
+			return command.DialogHandler(ctx, submission, args)
 		}
 	}
 
 	return nil, fmt.Errorf("command %s not found", cmd)
+}
+
+func enhanceContext(ctx context.Context, s *SlashCommand, command model.Command) context.Context {
+	ctx = log.WithPlugin(ctx, command.Plugin)
+	ctx = log.WithSlashCommand(ctx, s.Command)
+	return ctx
 }
 
 func Load(plugins []plugin.Plugin, cfg []config.CommandConfig) ([]SlashCommand, error) {
@@ -67,8 +78,10 @@ func Load(plugins []plugin.Plugin, cfg []config.CommandConfig) ([]SlashCommand, 
 			for _, plugin := range plugins {
 				if plugin.Name == cmdPlugins {
 					pluginCmds := plugin.RegisterSlashCommand()
-					log.Printf("plugin %s registered %d commands", plugin.Name, len(pluginCmds))
-					sCmd.Commands = append(sCmd.Commands, pluginCmds...)
+					for i := range pluginCmds {
+						pluginCmds[i].Plugin = plugin.Name
+						sCmd.Commands = append(sCmd.Commands, pluginCmds[i])
+					}
 				}
 			}
 		}

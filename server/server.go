@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -11,6 +11,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mattermost/ops-tool/config"
+	"github.com/mattermost/ops-tool/log"
 	"github.com/mattermost/ops-tool/plugin"
 	"github.com/mattermost/ops-tool/slashcommand"
 	"github.com/mattermost/ops-tool/store"
@@ -55,56 +56,81 @@ func New() *Server {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	log.Println("Starting ops tool server...")
+	log := log.FromContext(ctx)
 
-	log.Println("Loading config...")
+	log.Info("Starting ops tool server...")
+
+	log.Info("Loading config...")
 	cfg, err := config.Load("config/config.yaml")
 	if err != nil {
-		// LogError(err.Error())
+		log.WithError(err).Error("Failed to load config")
 		return errors.Wrap(err, "failed to load config")
 	}
 	s.Config = cfg
 
-	log.Println("Loading plugins...")
+	log.Debug("Loading plugins...")
 	plugins, err := plugin.Load(cfg.PluginsConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to load plugins")
 	}
 
-	log.Println("Loading commands...")
+	log.Debug("Loading commands...")
 	commands, err := slashcommand.Load(plugins, cfg.CommandConfigurations)
 	if err != nil {
 		return errors.Wrap(err, "failed to load commands")
 	}
 	s.commands = commands
 
-	log.Println("Loading scheduled commands...")
+	log.Debug("Loading scheduled commands...")
 	scheduler := gocron.NewScheduler(time.UTC)
 	for _, scheduledCommand := range cfg.ScheduledCommands {
-		log.Println("Scheduling command '" + scheduledCommand.Name + "' for " + scheduledCommand.Cron)
+		log.Debug("Scheduling command '" + scheduledCommand.Name + "' for " + scheduledCommand.Cron)
 		scheduler.Cron(scheduledCommand.Cron).DoWithJobDetails(s.scheduledCommandHandler, scheduledCommand)
 	}
 	scheduler.StartAsync()
 
 	s.DialogStore = store.NewInMemoryDialogStore()
 
+	// Prints all registered commands
 	for i := range s.commands {
-		log.Printf("**/%s**", s.commands[i].Command)
+		log.Debugf("**/%s**", s.commands[i].Command)
 		for j := range s.commands[i].Commands {
-			log.Printf("\t/%s %s [Name:%s | Description: %s]", s.commands[i].Command, s.commands[i].Commands[j].Command, s.commands[i].Commands[j].Name, s.commands[i].Commands[j].Description)
+			log.Debugf("\t/%s %s [Name:%s | Description: %s]", s.commands[i].Command, s.commands[i].Commands[j].Command, s.commands[i].Commands[j].Name, s.commands[i].Commands[j].Description)
 		}
 	}
 
 	router := httprouter.New()
 	router.GET("/", indexHandler)
 	router.GET("/healthz", healthHandler)
-	router.POST("/hook", s.hookHandler)
-	router.POST("/dialog", s.dialogHandler)
+	router.POST("/hook", enhancedHandler(log, s.hookHandler))
+	router.POST("/dialog", enhancedHandler(log, s.dialogHandler))
 
 	s.server = &http.Server{Addr: cfg.Listen, Handler: router}
-	log.Println("starting http server")
+	log.Info("starting http server")
 
 	return s.server.ListenAndServe()
+}
+
+type ReqIdKey struct{}
+
+func enhancedHandler(logger *log.Logger, fn func(context.Context, http.ResponseWriter, *http.Request, httprouter.Params)) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		requestID := randStr(16)
+		ctx := log.WithRqId(r.Context(), requestID)
+
+		fn(ctx, w, r, ps)
+	}
+}
+
+// randStr generates a random string of a certain length
+func randStr(n int) string {
+	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	var bytes = make([]byte, n)
+	rand.Read(bytes)
+	for i, b := range bytes {
+		bytes[i] = alphanum[b%byte(len(alphanum))]
+	}
+	return string(bytes)
 }
 
 func (s *Server) findCommand(rootCommand string) *slashcommand.SlashCommand {

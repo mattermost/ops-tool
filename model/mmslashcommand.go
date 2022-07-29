@@ -20,7 +20,7 @@ type MMSlashCommand struct {
 	TriggerID   string `schema:"trigger_id"`
 }
 
-func ParseSlashCommand(r *http.Request) (*MMSlashCommand, error) {
+func ParseMattermostSlashCommand(r *http.Request) (*MMSlashCommand, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, err

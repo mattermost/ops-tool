@@ -2,11 +2,12 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
-	"log"
 	"strings"
 
 	"github.com/mattermost/ops-tool/config"
+	"github.com/mattermost/ops-tool/log"
 	"github.com/mattermost/ops-tool/model"
 	"github.com/mattermost/ops-tool/plugin"
 	"github.com/pkg/errors"
@@ -109,7 +110,8 @@ func (p *BashPlugin) RegisterSlashCommand() []model.Command {
 			Name:        cmd.Name,
 			Description: cmd.Description,
 			Usage:       cmd.Usage,
-			CommandHandler: func(mmCommand *model.MMSlashCommand, args map[string]string) (*model.CommandResponse, error) {
+			CommandHandler: func(ctx context.Context, mmCommand *model.MMSlashCommand, args map[string]string) (*model.CommandResponse, error) {
+				log := log.FromContext(ctx)
 				log.Println("Command:", cmd.Name)
 
 				// if we have a dialog, return it
@@ -120,7 +122,7 @@ func (p *BashPlugin) RegisterSlashCommand() []model.Command {
 					}, nil
 				}
 
-				cmdOutput, err := cmd.Execute(BashMetadata{
+				cmdOutput, err := cmd.Execute(ctx, BashMetadata{
 					ChannelID: mmCommand.ChannelID,
 					UserID:    mmCommand.UserID,
 					TeamID:    mmCommand.TeamID,
@@ -153,10 +155,12 @@ func (p *BashPlugin) RegisterSlashCommand() []model.Command {
 					},
 				}, nil
 			},
-			DialogHandler: func(submission *model.DialogSubmission, args map[string]string) (*model.CommandResponse, error) {
+			DialogHandler: func(ctx context.Context, submission *model.DialogSubmission, args map[string]string) (*model.CommandResponse, error) {
+				log := log.FromContext(ctx)
+
 				log.Println("Dialog:", cmd.Name)
 
-				cmdOutput, err := cmd.Execute(BashMetadata{
+				cmdOutput, err := cmd.Execute(ctx, BashMetadata{
 					ChannelID: submission.ChannelID,
 					UserID:    submission.UserID,
 					TeamID:    submission.TeamID,

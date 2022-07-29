@@ -2,14 +2,15 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 
+	"github.com/mattermost/ops-tool/log"
 	"github.com/mattermost/ops-tool/model"
 )
 
@@ -48,7 +49,9 @@ type BashCommandOutput struct {
 	Data   interface{} `json:"data"`
 }
 
-func (c *BashCommand) Execute(metadata BashMetadata, args map[string]string, submission map[string]string) (*BashCommandOutput, error) {
+func (c *BashCommand) Execute(ctx context.Context, metadata BashMetadata, args map[string]string, submission map[string]string) (*BashCommandOutput, error) {
+	log := log.FromContext(ctx)
+
 	var output BashCommandOutput
 	for _, step := range c.Exec {
 		var stdout bytes.Buffer
@@ -67,18 +70,20 @@ func (c *BashCommand) Execute(metadata BashMetadata, args map[string]string, sub
 		for name, value := range submission {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", name, value))
 		}
+
 		log.Printf("Env : %#v", cmd.Env)
+
 		cmd.Stdout = &stdout
 		cmd.Stderr = &stderr
 		err := cmd.Run()
 		if err != nil {
-			log.Printf("Error while executing command %s.Err:%s.\n%v\n", c.Name, stderr.String(), err)
+			log.WithError(err).Errorf("Error while executing command %s.\n%v\n", c.Name, stderr.String(), err)
 			return nil, err
 		}
 		data := stdout.Bytes()
 		err = json.Unmarshal(data, &output)
 		if err != nil {
-			log.Printf("Error while deserializing command output %s.Err:%s.\n%v", c.Name, string(data), err)
+			log.WithError(err).Errorf("Error while deserializing command output %s.\n%v", c.Name, string(data), err)
 			return nil, err
 		}
 	}

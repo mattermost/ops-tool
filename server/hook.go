@@ -2,40 +2,43 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	mmmodel "github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/ops-tool/log"
 	"github.com/mattermost/ops-tool/model"
 	"github.com/mattermost/ops-tool/slashcommand"
 )
 
-func (s *Server) hookHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	slashCommand, err := model.ParseSlashCommand(r)
+func (s *Server) hookHandler(ctx context.Context, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	log := log.FromContext(ctx)
+
+	slashCommand, err := model.ParseMattermostSlashCommand(r)
 	if err != nil {
-		fmt.Println("parse slash command" + err.Error())
+		log.WithError(err).Error("unable to parse mattermost slash command")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Printf("slashCommand received: %#v", *slashCommand)
+	log.Debugf("slashCommand received: %#v", *slashCommand)
 
 	rootCommand, cmdText, args, err := ParseCommand(slashCommand.Command + " " + slashCommand.Text)
 	if err != nil {
-		log.Println("parse slash command" + err.Error())
+		log.WithError(err).Warn("unable to parse user command")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	log.Println("Command: " + cmdText)
-	log.Printf("Args: %#v\n", args)
+	log.Debugf("Root Command: %s", rootCommand)
+	log.Debugf("Command: " + cmdText)
+	log.Debugf("Args: %#v", args)
 
 	cmd := s.findCommand(rootCommand)
 	if cmd == nil {
-		log.Println("Command not found, sending full help")
+		log.WithError(err).Error("Command not found, sending full help")
 		help := s.fullHelp()
 		WriteResponse(w, help, mmmodel.CommandResponseTypeEphemeral)
 		return
@@ -43,22 +46,22 @@ func (s *Server) hookHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	// make sure the token is valid
 	if !strings.EqualFold(cmd.Token, slashCommand.Token) {
-		log.Println("invalid token")
+		log.Error("Invalid token - possibly a crafted command")
 		WriteErrorResponse(w, NewError("Invalid command token! Please check slash command token", err))
 		return
 	}
 
-	response, err := cmd.Execute(slashCommand, cmdText, args)
+	response, err := cmd.Execute(ctx, slashCommand, cmdText, args)
 	if err != nil {
 		if err == slashcommand.ErrCommandNotFound {
-			log.Println("Command not found, sending help")
-			help := "**Command not found. Available commands:**\n\n" + s.helpForCommand(*cmd)
+			log.Debug("Command not found, sending help")
 
+			help := "**Command not found. Available commands:**\n\n" + s.helpForCommand(*cmd)
 			WriteResponse(w, help, mmmodel.CommandResponseTypeEphemeral)
 			return
 		}
 
-		log.Println("execute command: " + err.Error())
+		log.WithError(err).Error("Error occurred while executing command")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -77,42 +80,41 @@ func (s *Server) hookHandler(w http.ResponseWriter, r *http.Request, ps httprout
 			response.Dialog,
 		)
 		request.URL = s.Config.BaseURL + "/dialog"
-		log.Println("dialog response to: " + request.URL)
+		log.Debug("dialog response to: " + request.URL)
 		if err != nil {
-			log.Println("create dialog" + err.Error())
+			log.WithError(err).Error("unable to create dialog")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		s.SendDialogRequest(cmd.DialogURL, request)
+		s.SendDialogRequest(ctx, cmd.DialogURL, request)
 		return
 	}
 	// TODO: error for unknown response type?
 }
 
-func (s *Server) SendDialogRequest(url string, request *mmmodel.OpenDialogRequest) {
+func (s *Server) SendDialogRequest(ctx context.Context, url string, request *mmmodel.OpenDialogRequest) {
 	b, err := json.Marshal(request)
 	if err != nil {
-		log.Printf("Unable to marshal dialog request %v", err)
+		log.FromContext(ctx).WithError(err).Error("unable to marshal dialog request")
 		return
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
-	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
-
 	if err != nil {
-		log.Printf("Error occurred while creating request to %s. %v", url, err)
+		log.FromContext(ctx).WithError(err).Error("unable to create dialog request")
 		return
 	}
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
-		log.Printf("Error occurred while sending data to %s. %v", url, err)
+		log.FromContext(ctx).WithError(err).Error("unable to send dialog request")
 		return
 	}
 
 	if response.StatusCode != 200 {
-		log.Printf("Got %d while invoking %s.", response.StatusCode, url)
+		log.FromContext(ctx).With("status", response.Status).Error("unable to send dialog request")
 		return
 	}
 }
@@ -140,7 +142,7 @@ func GenerateEnrichedSlashResponse(title, text, color, respType string) []byte {
 
 	b, err := json.Marshal(response)
 	if err != nil {
-		log.Printf("Unable to marshal response")
+		log.Default().Error("Unable to marshal response")
 		return nil
 	}
 
@@ -156,7 +158,7 @@ func GenerateStandardSlashResponse(text string, respType string) string {
 
 	b, err := json.Marshal(response)
 	if err != nil {
-		log.Println("Unable to marshal response")
+		log.Default().Error("Unable to marshal response")
 		return ""
 	}
 	return string(b)

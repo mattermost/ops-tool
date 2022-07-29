@@ -2,41 +2,45 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	mmmodel "github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/ops-tool/log"
 	"github.com/mattermost/ops-tool/model"
+	"github.com/pkg/errors"
 )
 
-func (s *Server) dialogHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (s *Server) dialogHandler(ctx context.Context, w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	log := log.FromContext(ctx)
+
 	dialogSubmission, err := model.ParseDialogSubmission(r)
 	if err != nil {
+		log.WithError(err).Error("unable to parse dialog submission")
 		WriteErrorResponse(w, NewError("Unable to parse dialog submission", err))
 		return
 	}
-	log.Printf("Received valid dialog submission for session %s, canceled: %t", dialogSubmission.CallbackID, dialogSubmission.Canceled)
+	log.Debugf("Received valid dialog submission for session %s, canceled: %t", dialogSubmission.CallbackID, dialogSubmission.Canceled)
 
 	dialogSession, err := s.DialogStore.Get(dialogSubmission.CallbackID)
 	if err != nil {
-		log.Printf("Dialog Session %s not found!", dialogSession.CallbackID)
+		log.WithError(err).Error("unable to get dialog session")
 		WriteResponse(w, "Session not found! Trigger slash command again!", mmmodel.CommandResponseTypeEphemeral)
 		return
 	}
 
-	log.Printf("Found session executing command %s", dialogSession.RootCommand+" "+dialogSession.Command)
 	s.DialogStore.Delete(dialogSession.CallbackID)
-	log.Printf("Session %s is terminated. %d session is active.", dialogSession.CallbackID, s.DialogStore.Count())
+	log.Debugf("Session %s is terminated. %d session is active.", dialogSession.CallbackID, s.DialogStore.Count())
 	if dialogSubmission.Canceled {
 		return
 	}
 
 	for _, cmd := range s.commands {
 		if strings.EqualFold(dialogSession.RootCommand, cmd.Command) {
-			response, err := cmd.ExecuteDialog(dialogSubmission, dialogSession.Command, dialogSession.CommandArgs)
+			response, err := cmd.ExecuteDialog(ctx, dialogSubmission, dialogSession.Command, dialogSession.CommandArgs)
 			if err != nil {
 				log.Println("execute dialog: " + err.Error())
 				w.WriteHeader(http.StatusBadRequest)
@@ -61,29 +65,31 @@ func (s *Server) dialogHandler(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 }
 
-func SendViaIncomingHook(hook, channelName, title, text, color string) {
-	data := GenerateIncomingWebhookRequest(channelName, title, text, color)
+func SendViaIncomingHook(hook, channelName, title, text, color string) error {
+	data, err := GenerateIncomingWebhookRequest(channelName, title, text, color)
+	if err != nil {
+		return errors.Wrap(err, "unable to generate incoming webhook request")
+	}
 
 	request, err := http.NewRequest("POST", hook, bytes.NewBuffer(data))
 	if err != nil {
-		log.Printf("[%s]Error occurred creating request to %s. %v", title, hook, err)
-		return
+		return errors.Wrap(err, "unable to create request")
 	}
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		log.Printf("[%s]Error occurred while sending data to %s. %v", title, hook, err)
-		return
+		return errors.Wrap(err, "unable to send request")
 	}
 
 	if response.StatusCode != 200 {
-		log.Printf("[%s]Got %d while invoking %s.", title, response.StatusCode, hook)
+		return errors.New("unexpected response status code: " + response.Status)
 	}
+	return nil
 }
 
-func GenerateIncomingWebhookRequest(channelName, title, text, color string) []byte {
+func GenerateIncomingWebhookRequest(channelName, title, text, color string) ([]byte, error) {
 	msgAttachment := &mmmodel.SlackAttachment{
 		Fallback: text,
 		Color:    color,
@@ -97,10 +103,6 @@ func GenerateIncomingWebhookRequest(channelName, title, text, color string) []by
 	}
 
 	b, err := json.Marshal(request)
-	if err != nil {
-		log.Println("Unable to marshal request")
-		return nil
-	}
 
-	return b
+	return b, errors.Wrap(err, "unable to marshal request")
 }

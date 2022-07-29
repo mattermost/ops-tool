@@ -3,8 +3,9 @@ package model
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 type Dialog struct {
@@ -50,16 +51,14 @@ type DialogSubmission struct {
 func ParseDialogSubmission(r *http.Request) (*DialogSubmission, error) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Error reading body: %v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "failed to read request body")
 	}
 	dialogSubmission := &DialogSubmission{}
 
 	err = json.Unmarshal(body, dialogSubmission)
 	if err != nil {
-		log.Printf("Unable to unmarshal dialog submission %v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "failed to unmarshal request body")
 	}
-	log.Println(string(body))
+
 	return dialogSubmission, nil
 }
