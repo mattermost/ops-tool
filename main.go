@@ -2,16 +2,19 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/mattermost/ops-tool/log"
 	"github.com/mattermost/ops-tool/server"
+	"github.com/mattermost/ops-tool/version"
 )
 
 func main() {
+	log.AttachVersion(version.Full())
+
 	signalChanel := make(chan os.Signal, 1)
 	signal.Notify(signalChanel,
 		syscall.SIGINT,
@@ -26,9 +29,9 @@ func main() {
 	go func() {
 		select {
 		case <-signalChanel:
-			fmt.Println("Received an interrupt, stopping...")
+			log.Default().Println("Received an interrupt, stopping...")
 		case <-ctx.Done():
-			fmt.Println("Context done, stopping...")
+			log.Default().Println("Context done, stopping...")
 		}
 		srv.Stop()
 	}()

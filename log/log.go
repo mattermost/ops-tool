@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/mattermost/ops-tool/version"
 	"go.uber.org/zap"
 )
 
@@ -43,6 +44,16 @@ func WithSlashCommand(ctx context.Context, slashcmd string) context.Context {
 }
 
 func Default() *Logger {
+	return logger
+}
+
+func AttachVersion(v *version.Info) *Logger {
+	logger = &Logger{logger.With(
+		zap.String("app_name", v.Name),
+		zap.String("version", v.Version),
+		zap.String("build_hash", v.Hash),
+		zap.String("build_date", v.Date),
+	)}
 	return logger
 }
 
