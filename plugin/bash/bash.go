@@ -27,7 +27,7 @@ type Config struct {
 	Files []string `yaml:"files"`
 }
 
-func New(cfg config.RawMessage) (plugin.PluginInterface, error) {
+func New(cfg config.RawMessage) (plugin.Interface, error) {
 	var localCfg Config
 	err := cfg.Unmarshal(&localCfg)
 	if err != nil {
@@ -188,8 +188,6 @@ func (p *BashPlugin) RegisterSlashCommand() []model.Command {
 						Body:         buf.String(),
 					},
 				}, nil
-
-				return nil, nil
 			},
 		})
 	}

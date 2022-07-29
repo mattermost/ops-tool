@@ -45,7 +45,6 @@ func (s *InMemoryDialogStore) Create(
 	callbackID := uuid.NewString()
 	elements := make([]mmmodel.DialogElement, 0)
 	for _, opsElem := range dialog.Elements {
-
 		options := make([]*mmmodel.PostActionOptions, 0)
 		for _, option := range opsElem.Options {
 			options = append(options, &mmmodel.PostActionOptions{

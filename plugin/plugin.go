@@ -10,12 +10,12 @@ import (
 
 var loadedGoPlugin map[string]*plugin.Plugin = make(map[string]*plugin.Plugin)
 
-type PluginInterface interface {
+type Interface interface {
 	RegisterSlashCommand() []model.Command
 }
 
 type Plugin struct {
-	PluginInterface
+	Interface
 
 	Name string
 }
@@ -39,7 +39,7 @@ func Load(cfg []config.PluginConfig) ([]Plugin, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to lookup New in plugin %s", pluginCfg.Name)
 		}
-		newFn, ok := lookupNew.(func(config.RawMessage) (PluginInterface, error))
+		newFn, ok := lookupNew.(func(config.RawMessage) (Interface, error))
 		if !ok {
 			return nil, errors.Errorf("failed to find New in plugin %s", pluginCfg.Name)
 		}
@@ -50,8 +50,8 @@ func Load(cfg []config.PluginConfig) ([]Plugin, error) {
 		}
 
 		plugins[i] = Plugin{
-			PluginInterface: createdPlugin,
-			Name:            pluginCfg.Name,
+			Interface: createdPlugin,
+			Name:      pluginCfg.Name,
 		}
 	}
 

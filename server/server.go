@@ -34,7 +34,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 func healthHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	err := json.NewEncoder(w).Encode(healthResponse{Info: version.Full()})
 	if err != nil {
-		//LogError(err.Error())
+		// LogError(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -58,7 +58,7 @@ func (s *Server) Start(ctx context.Context) error {
 	log.Println("Loading config...")
 	cfg, err := config.Load("config/config.yaml")
 	if err != nil {
-		//LogError(err.Error())
+		// LogError(err.Error())
 		return errors.Wrap(err, "failed to load config")
 	}
 	s.Config = cfg

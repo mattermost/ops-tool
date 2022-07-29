@@ -39,7 +39,7 @@ type BashCommand struct {
 	Dialog   model.Dialog `yaml:"dialog"`
 	Response BashResponse `yaml:"response"`
 
-	// deprecated: prefer having  a complete command instead
+	// Deprecated: prefer having  a complete command instead
 	Subcommand string `yaml:"subcommand"`
 }
 
