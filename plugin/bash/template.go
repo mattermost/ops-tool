@@ -1,9 +1,9 @@
-package server
+package main
 
 import (
 	"html/template"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func createTemplate(name string, tpl string) (*template.Template, error) {

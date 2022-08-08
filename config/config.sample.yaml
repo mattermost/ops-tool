@@ -1,19 +1,47 @@
 ---
 
 listen: "0.0.0.0:8080"
-token: "TOKEN"           # Mattermost slash command token
-commands:
-  - commands/gitlab/gitlab.yaml                
-  - commands/docker/docker.yaml
-  - commands/fun/fun.yaml
-  - commands/k8s/k8s.yaml
-  - commands/release/release.yaml
+base_url: "https://op-tools-address.com"
+plugins:
+  - name: bash_useful
+    file: plugins/bash.so
+    config:
+      files:
+        - commands/gitlab/gitlab.yaml
+        - commands/docker/docker.yaml
+        - commands/k8s/k8s.yaml
+        - commands/release/release.yaml
+  - name: bash_fun
+    file: plugins/bash.so
+    config:
+      files:
+        - commands/helloworld/helloworld.yaml
+        - commands/fun/fun.yaml    
+commands: 
+  - command: jops
+    plugins:
+      - name: bash_useful
+      - name: bash_fun
+        exclude: ["fun figlet"]
+      - name: bash_fun
+        only: ["fun figlet"]
+    token: "MATTERMOST_SLASHCOMMAND_TOKEN"
+    dialog_url: https://my-mattermost-instance.cloud.mattermost.com/api/v4/actions/dialogs/open
+    dialog_response_url: https://my-mattermost-instance.cloud.mattermost.com/hooks/random-id
+    scheduler_response_url:  https://my-mattermost-instance.cloud.mattermost.com/hooks/random-id
 scheduler:
+  - name: "Check Gitlab Version"
+    command: "jops gitlab version --check"
+    channel: "ops-tool-notifications"
+    cron: "0 * * * *"
   - name: "Joke"
     channel: "fun"
-    provider: "fun"
-    command: "joke"
+    command: "jops fun joke"
     cron: "*/5 * * * *"
-    hook: "TOKEN"
+  - name: "Fortune"
+    channel: "fun"
+    command: "jops fun fortune"
+    cron: "*/6 * * *"
     
 ...
+

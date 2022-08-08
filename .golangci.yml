@@ -43,4 +43,8 @@ linters:
     - unused
     - varcheck
     - whitespace
-    
+
+issues:
+  exclude-rules:
+    - path: plugin/(.+)/(.+)\.go
+      linters: [deadcode] # plugins functions are called dynamically

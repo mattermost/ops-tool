@@ -15,6 +15,9 @@ dist
 # Dependency directories
 vendor/
 
+# config file
+config/config.yaml
+
 # IDE
 .vscode
 
