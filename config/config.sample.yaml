@@ -1,6 +1,6 @@
 ---
 
-listen: "0.0.0.0:8080"
+listen: "{{ .Env.MM_OPTOOLS_LISTEN }}"
 base_url: "https://op-tools-address.com"
 plugins:
   - name: bash_useful
