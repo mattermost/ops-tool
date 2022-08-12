@@ -66,7 +66,6 @@ func Load(ctx context.Context, path string) (*Config, error) {
 
 	// Try to use the config file as a template.
 	// If anything fails at this stage only log error but let the program continue
-	// turns all env variable into template variables
 	log.FromContext(ctx).Debug("parsing config file as template")
 	content = parseConfigTemplate(ctx, content)
 
@@ -87,6 +86,7 @@ func parseConfigTemplate(ctx context.Context, content []byte) []byte {
 		return content
 	}
 
+	// turns all env variable into template variables
 	m := make(map[string]string)
 	for _, e := range os.Environ() {
 		if i := strings.Index(e, "="); i >= 0 {
