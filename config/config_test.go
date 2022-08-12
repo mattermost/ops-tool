@@ -69,13 +69,12 @@ commands:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			for varName := range tt.injectEnv {
 				os.Setenv(varName, tt.injectEnv[varName])
 			}
 
 			if got := parseConfigTemplate(context.TODO(), tt.input); !reflect.DeepEqual(got, tt.output) {
-				if len(got) == 0 && len(got) == len(tt.output) {
+				if len(got) == 0 && len(tt.output) == 0 {
 					// valid
 					return
 				}
