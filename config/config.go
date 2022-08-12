@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/mattermost/ops-tool/model"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -36,12 +37,13 @@ type PluginConfig struct {
 }
 
 type CommandConfig struct {
-	Command              string          `yaml:"command"`
-	Token                string          `yaml:"token"`
-	DialogURL            string          `yaml:"dialog_url"`
-	DialogResponseURL    string          `yaml:"dialog_response_url"`
-	SchedulerResponseURL string          `yaml:"scheduler_response_url"`
-	Plugins              []CommandPlugin `yaml:"plugins"`
+	Command              string              `yaml:"command"`
+	Token                string              `yaml:"token"`
+	DialogURL            string              `yaml:"dialog_url"`
+	DialogResponseURL    string              `yaml:"dialog_response_url"`
+	SchedulerResponseURL string              `yaml:"scheduler_response_url"`
+	Plugins              []CommandPlugin     `yaml:"plugins"`
+	AccessControl        model.AccessControl `yaml:"access_control"`
 }
 
 type ScheduledCommandConfig struct {

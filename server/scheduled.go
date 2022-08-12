@@ -6,7 +6,6 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/mattermost/ops-tool/config"
 	"github.com/mattermost/ops-tool/log"
-	"github.com/mattermost/ops-tool/model"
 )
 
 func (s *Server) scheduledCommandHandler(scheduledCommand config.ScheduledCommandConfig, job gocron.Job) {
@@ -27,7 +26,7 @@ func (s *Server) scheduledCommandHandler(scheduledCommand config.ScheduledComman
 		return
 	}
 
-	response, err := cmd.Execute(ctx, &model.MMSlashCommand{}, cmdText, args)
+	response, err := cmd.Execute(ctx, nil, cmdText, args)
 	if err != nil {
 		log.Printf("error executing command: %s", err.Error())
 		return
