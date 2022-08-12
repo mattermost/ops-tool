@@ -55,13 +55,13 @@ func New() *Server {
 	return &Server{}
 }
 
-func (s *Server) Start(ctx context.Context) error {
+func (s *Server) Start(ctx context.Context, configPath string) error {
 	log := log.FromContext(ctx)
 
 	log.Info("Starting ops tool server...")
 
 	log.Info("Loading config...")
-	cfg, err := config.Load("config/config.yaml")
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		log.WithError(err).Error("Failed to load config")
 		return errors.Wrap(err, "failed to load config")

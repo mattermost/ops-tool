@@ -22,5 +22,5 @@ COPY --from=builder /src/dist/ops_tool-linux-amd64 /opt/ops-tool/bin/ops-tool
 # Run as UID for nobody
 USER 65534
 
-WORKDIR /opt/ops-tool/bin
-ENTRYPOINT ["./ops-tool"]
+WORKDIR /opt/ops-tool
+ENTRYPOINT ["./bin/ops-tool"]

@@ -82,6 +82,9 @@ GITHUB_ORG                   := mattermost
 # Most probably the name of the repo
 GITHUB_REPO                  := ${APP_NAME}
 
+# Command line arguments of ops tool when executed
+OPS_TOOL_ARGS                ?= -c config/config.sample.yaml
+
 # ====================================================================================
 # Colors
 
@@ -281,7 +284,7 @@ go-build-docker: # to build binaries under a controlled docker dedicated go cont
 .PHONY: go-run
 go-run: ## to run locally for development
 	@$(INFO) running locally...
-	$(AT)$(GO) run ${GO_BUILD_OPTS} ${CONFIG_APP_CODE} || ${FAIL}
+	$(AT)$(GO) run ${GO_BUILD_OPTS} ${CONFIG_APP_CODE} -- ${OPS_TOOL_ARGS} || ${FAIL}
 	@$(OK) running locally
 
 .PHONY: go-test
