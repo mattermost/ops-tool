@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,6 +14,9 @@ import (
 )
 
 func main() {
+	configFilePath := flag.String("config", "config/config.yaml", "Ops-Tool Configuration File Location")
+	flag.Parse()
+
 	log.AttachVersion(version.Full())
 
 	signalChanel := make(chan os.Signal, 1)
@@ -36,7 +40,7 @@ func main() {
 		srv.Stop()
 	}()
 
-	err := srv.Start(ctx)
+	err := srv.Start(ctx, *configFilePath)
 	if err != nil && err != http.ErrServerClosed {
 		panic(err)
 	}
