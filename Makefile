@@ -82,6 +82,8 @@ GITHUB_ORG                   := mattermost
 # Most probably the name of the repo
 GITHUB_REPO                  := ${APP_NAME}
 
+# Plugins in the repository to be included in the releases and docker images
+OPS_TOOL_PLUGINS             ?= bash
 # Command line arguments of ops tool when executed
 OPS_TOOL_ARGS                ?= -c config/config.sample.yaml
 
@@ -115,6 +117,13 @@ VERBOSE ?= 0
 AT_0 := @
 AT_1 :=
 AT = $(AT_$(VERBOSE))
+
+# ====================================================================================
+# Functions
+define BuildPlugin
+	$(AT)$(INFO) Building ${BLUE}$(1)${CNone} plugin.
+	$(AT)cd plugin/$(1);make build || ${FAIL}
+endef
 
 # ====================================================================================
 # Targets
@@ -249,7 +258,7 @@ docker-login: ## to login to a container registry
 	$(AT) echo "${DOCKER_PASSWORD}" | $(DOCKER) login --password-stdin -u ${DOCKER_USER} $(DOCKER_REGISTRY) || ${FAIL}
 	@$(OK) Dockerd login to container registry ${DOCKER_REGISTRY}...
 
-go-build: $(GO_BUILD_PLATFORMS_ARTIFACTS) ## to build binaries
+go-build: $(GO_BUILD_PLATFORMS_ARTIFACTS) go-build-plugins ## to build binaries
 
 .PHONY: go-build
 go-build/%:
@@ -262,12 +271,15 @@ go-build/%:
 	export GOARCH="$${platform#*-}"; \
 	echo export GOOS=$${GOOS}; \
 	echo export GOARCH=$${GOARCH}; \
-	CGO_ENABLED=0 \
 	$(GO) build ${GO_BUILD_OPTS} \
 	-ldflags '${GO_LDFLAGS}' \
 	-o ${GO_OUT_BIN_DIR}/$* \
 	${CONFIG_APP_CODE} || ${FAIL}
 	@$(OK) go build $*
+
+.PHONY: go-build-plugins
+go-build-plugins:
+	$(foreach plugin, $(OPS_TOOL_PLUGINS), $(call BuildPlugin,$(plugin)))
 
 .PHONY: go-build-docker
 go-build-docker: # to build binaries under a controlled docker dedicated go container using DOCKER_IMAGE_GO
