@@ -4,7 +4,7 @@ listen: "0.0.0.0:8080"
 base_url: "https://op-tools-address.com"
 plugins:
   - name: bash_useful
-    file: plugins/bash.so
+    file: dist/plugins/bash.so
     config:
       files:
         - commands/gitlab/gitlab.yaml
@@ -12,7 +12,7 @@ plugins:
         - commands/k8s/k8s.yaml
         - commands/release/release.yaml
   - name: bash_fun
-    file: plugins/bash.so
+    file: dist/plugins/bash.so
     config:
       files:
         - commands/helloworld/helloworld.yaml
