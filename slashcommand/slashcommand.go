@@ -25,11 +25,31 @@ type SlashCommand struct {
 	SchedulerResponseURL string
 
 	Commands []model.Command
+
+	AccessControl model.AccessControl
 }
 
 var ErrCommandNotFound = errors.New("command not found")
+var ErrTeamUnauthorized = errors.New("you cannot use this command from this team")
+var ErrChannelUnauthorized = errors.New("you cannot use this command from this channel")
+var ErrUserUnauthorized = errors.New("you are not authorized to use this command")
 
 func (s *SlashCommand) Execute(ctx context.Context, mmCommand *model.MMSlashCommand, cmd string, args map[string]string) (*model.CommandResponse, error) {
+	// mmCommand is nil for scheduled commands, no access control needed
+	if mmCommand != nil && !s.AccessControl.IsEmpty() {
+		err := s.accessControl(mmCommand)
+		if err != nil {
+			log.FromContext(ctx).
+				WithError(err).
+				Warn("restricted by access control")
+			return nil, err
+		}
+	}
+
+	if mmCommand == nil {
+		mmCommand = &model.MMSlashCommand{}
+	}
+
 	for _, command := range s.Commands {
 		if strings.EqualFold(command.Command, cmd) {
 			ctx = enhanceContext(ctx, s, command)
@@ -40,6 +60,29 @@ func (s *SlashCommand) Execute(ctx context.Context, mmCommand *model.MMSlashComm
 	}
 
 	return nil, ErrCommandNotFound
+}
+
+func (s *SlashCommand) accessControl(mmCommand *model.MMSlashCommand) error {
+	if len(s.AccessControl.TeamID) > 0 && !contains(s.AccessControl.TeamID, mmCommand.TeamID) {
+		return ErrTeamUnauthorized
+	}
+	if len(s.AccessControl.TeamName) > 0 && !contains(s.AccessControl.TeamName, mmCommand.TeamName) {
+		return ErrTeamUnauthorized
+	}
+	if len(s.AccessControl.ChannelID) > 0 && !contains(s.AccessControl.ChannelID, mmCommand.ChannelID) {
+		return ErrChannelUnauthorized
+	}
+	if len(s.AccessControl.ChannelName) > 0 && !contains(s.AccessControl.ChannelName, mmCommand.ChannelName) {
+		return ErrChannelUnauthorized
+	}
+	if len(s.AccessControl.UserID) > 0 && !contains(s.AccessControl.UserID, mmCommand.UserID) {
+		return ErrUserUnauthorized
+	}
+	if len(s.AccessControl.UserName) > 0 && !contains(s.AccessControl.UserName, mmCommand.Username) {
+		return ErrUserUnauthorized
+	}
+
+	return nil
 }
 
 func (s *SlashCommand) ExecuteDialog(ctx context.Context, submission *model.DialogSubmission, cmd string, args map[string]string) (*model.CommandResponse, error) {
@@ -72,6 +115,7 @@ func Load(ctx context.Context, plugins []plugin.Plugin, cfg []config.CommandConf
 			DialogResponseURL:    commandCfg.DialogResponseURL,
 			SchedulerResponseURL: commandCfg.SchedulerResponseURL,
 			Commands:             []model.Command{},
+			AccessControl:        commandCfg.AccessControl,
 		}
 		ctx = log.WithSlashCommand(ctx, sCmd.Command)
 
