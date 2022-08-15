@@ -1,9 +1,14 @@
 package config
 
 import (
-	"fmt"
+	"bytes"
+	"context"
 	"io/ioutil"
+	"os"
+	"strings"
+	"text/template"
 
+	"github.com/mattermost/ops-tool/log"
 	"github.com/mattermost/ops-tool/model"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -54,14 +59,19 @@ type ScheduledCommandConfig struct {
 	ResponseURL string `yaml:"response_url"`
 }
 
-func Load(path string) (*Config, error) {
-	fmt.Println("Loading config from", path)
+func Load(ctx context.Context, path string) (*Config, error) {
+	log.FromContext(ctx).Info("loading config from " + path)
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read config file %s", path)
 	}
 
-	fmt.Println("Parsing config")
+	// Try to use the config file as a template.
+	// If anything fails at this stage only log error but let the program continue
+	log.FromContext(ctx).Debug("parsing config file as template")
+	content = parseConfigTemplate(ctx, content)
+
+	log.FromContext(ctx).Debug("unmarshalling config file")
 	var config Config
 	err = yaml.Unmarshal(content, &config)
 	if err != nil {
@@ -69,6 +79,32 @@ func Load(path string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func parseConfigTemplate(ctx context.Context, content []byte) []byte {
+	t, err := template.New("config").Parse(string(content))
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to create template from config file")
+		return content
+	}
+
+	// turns all env variable into template variables
+	m := make(map[string]string)
+	for _, e := range os.Environ() {
+		if i := strings.Index(e, "="); i >= 0 {
+			m[e[:i]] = e[i+1:]
+		}
+	}
+
+	buf := &bytes.Buffer{}
+	if err = t.Execute(buf, map[string]map[string]string{
+		"Env": m,
+	}); err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to execute config template")
+		return content
+	}
+
+	return buf.Bytes()
 }
 
 type CommandPlugin struct {

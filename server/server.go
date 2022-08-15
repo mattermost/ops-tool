@@ -61,7 +61,7 @@ func (s *Server) Start(ctx context.Context, configPath string) error {
 	log.Info("Starting ops tool server...")
 
 	log.Info("Loading config...")
-	cfg, err := config.Load(configPath)
+	cfg, err := config.Load(ctx, configPath)
 	if err != nil {
 		log.WithError(err).Error("Failed to load config")
 		return errors.Wrap(err, "failed to load config")
