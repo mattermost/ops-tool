@@ -29,6 +29,10 @@ commands:
     dialog_url: https://my-mattermost-instance.cloud.mattermost.com/api/v4/actions/dialogs/open
     dialog_response_url: https://my-mattermost-instance.cloud.mattermost.com/hooks/random-id
     scheduler_response_url:  https://my-mattermost-instance.cloud.mattermost.com/hooks/random-id
+    access_control:
+      team_name: ["team-name"]
+      channel_id: ["channel-id"]
+      user_name: ["user1", "user2"]
 scheduler:
   - name: "Check Gitlab Version"
     command: "jops gitlab version --check"
