@@ -1,0 +1,13 @@
+---
+
+- command: "ping"
+  name: "Ping-Pong"
+  description: "Test OpsTool integration."
+  exec: 
+    - scripts/test/ping.sh
+  response:
+    type: "ephemeral"
+    colors:
+      - color: "#ff0000"
+      
+...

@@ -73,6 +73,7 @@ GO_BUILD_OPTS                += -mod=readonly -trimpath
 GO_TEST_OPTS                 += -mod=readonly -failfast -race
 # Temporary folder to output compiled binaries artifacts
 GO_OUT_BIN_DIR               := ./dist
+GO_OUT_BIN_PLUGIN_DIR        := ./dist/plugins
 
 ## Github Variables
 # A github access token that provides access to upload artifacts under releases
@@ -85,7 +86,7 @@ GITHUB_REPO                  := ${APP_NAME}
 # Plugins in the repository to be included in the releases and docker images
 OPS_TOOL_PLUGINS             ?= bash
 # Command line arguments of ops tool when executed
-OPS_TOOL_ARGS                ?= -c config/config.sample.yaml
+OPS_TOOL_ARGS                ?= -config config/config.sample.yaml
 
 # ====================================================================================
 # Colors
@@ -362,7 +363,7 @@ else
 	$(DOCKER_IMAGE_GH_CLI) \
 	/bin/sh -c \
 	"cd /app && \
-	gh release create $(APP_VERSION) --generate-notes $(GO_OUT_BIN_DIR)/*" || ${FAIL}
+	gh release create $(APP_VERSION) --generate-notes $(GO_OUT_BIN_DIR)/* $(GO_OUT_BIN_PLUGIN_DIR)/*" || ${FAIL}
 endif
 	@$(OK) Generating github-release http://github.com/$(GITHUB_ORG)/$(GITHUB_REPO)/releases/tag/$(APP_VERSION) ...
 
